@@ -246,6 +246,16 @@ var VIEW_SETTINGS = `
     <div class="setting-row"><div><label>Company</label><div class="hint">Acme Corp</div></div><button class="topup-btn">Edit</button></div>
   </div>
   <div class="settings-section">
+    <div class="settings-section-title">Backend Connection</div>
+    <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <div><label>Secure Tunnel URL</label><div class="hint">Enter your Pinggy or localhost.run link to connect your local GPU.</div></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="settings-backend-url" placeholder="https://..." style="flex:1;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;" />
+        <button class="btn-primary" style="padding:8px 16px;width:auto;font-size:13px;" onclick="saveBackendUrl()">Connect</button>
+      </div>
+    </div>
+  </div>
+  <div class="settings-section">
     <div class="settings-section-title">Notifications</div>
     <div class="setting-row"><div><label>Training complete alerts</label><div class="hint">Get notified when your model finishes</div></div><button class="toggle on" id="t-notif" onclick="toggleSetting('notif')"></button></div>
     <div class="setting-row"><div><label>Product updates</label><div class="hint">News about new features</div></div><button class="toggle" id="t-updates" onclick="toggleSetting('updates')"></button></div>

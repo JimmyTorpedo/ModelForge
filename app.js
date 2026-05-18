@@ -1,24 +1,27 @@
-// ─── ModelForge Local API Configuration ─────────────────────────────────────
-var backendBaseUrl = "";
+// ─── Security Check & Configuration ──────────────────────────────────────────
 if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.endsWith(".local")) {
-  backendBaseUrl = localStorage.getItem("backendBaseUrl") || "";
-  if (!backendBaseUrl) {
-    backendBaseUrl = prompt("Enter your backend tunnel URL (e.g. https://rnxxx.a.free.pinggy.link):") || "";
-    if (backendBaseUrl) localStorage.setItem("backendBaseUrl", backendBaseUrl.trim());
+  var pwd = prompt("Enter access password to view demo:");
+  if (pwd !== "madeira2026") {
+    document.body.innerHTML = "<h1 style='text-align:center;margin-top:20vh;color:#111827;font-family:sans-serif'>Access Denied</h1>";
+    throw new Error("Access Denied");
   }
 }
-backendBaseUrl = backendBaseUrl.trim().replace(/\/$/, "");
 
-var LOCAL_API_URL    = backendBaseUrl + "/chat/direct";
-var LOCAL_UPLOAD_URL = backendBaseUrl + "/upload";
-var LOCAL_RUNDOWN_URL= backendBaseUrl + "/rundown";
-var LOCAL_TRAIN_URL  = backendBaseUrl + "/train";
+function getBaseUrl() {
+  var url = localStorage.getItem("backendBaseUrl") || "";
+  return url.trim().replace(/\/$/, "");
+}
 
-var wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-var defaultWsHost = wsProtocol + "//" + window.location.host;
-var LOCAL_WS_URL = backendBaseUrl 
-  ? backendBaseUrl.replace(/^http/, 'ws') + "/ws/progress" 
-  : defaultWsHost + "/ws/progress";
+function getApiUrl() { return getBaseUrl() + "/chat/direct"; }
+function getUploadUrl() { return getBaseUrl() + "/upload"; }
+function getRundownUrl() { return getBaseUrl() + "/rundown"; }
+function getTrainUrl() { return getBaseUrl() + "/train"; }
+function getWsUrl() {
+  var base = getBaseUrl();
+  if (base) return base.replace(/^http/, 'ws') + "/ws/progress";
+  var wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return wsProtocol + "//" + window.location.host + "/ws/progress";
+}
 
 // ─── Gemini API Configuration (For Onboarding Builder) ───────────────────────
 var GEMINI_API_KEY = "AIzaSyCyZo98Ygk9Tz-0Z1wcDJn28myAuMfCrhk";
@@ -85,6 +88,15 @@ function renameModel() {
     if (document.getElementById('test-model-name-header')) {
       document.getElementById('test-model-name-header').textContent = "Testing: " + newName;
     }
+  }
+}
+
+function saveBackendUrl() {
+  var el = document.getElementById('settings-backend-url');
+  if (el) {
+    var val = el.value.trim();
+    localStorage.setItem("backendBaseUrl", val);
+    alert("Backend connection saved successfully!");
   }
 }
 
@@ -264,7 +276,17 @@ function callLocalAPI(userText) {
   testMessages.push({ typing: true });
   renderTestMessages();
 
-  fetch(LOCAL_API_URL, {
+  var base = getBaseUrl();
+  if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !base) {
+    testMessages = testMessages.filter(function(m) { return !m.typing; });
+    testMessages.push({ role: 'ai', text: "Cannot connect. Please configure your Backend Tunnel URL in Settings first!" });
+    renderTestMessages();
+    isFetching = false;
+    if (sendBtn) sendBtn.disabled = false;
+    return;
+  }
+
+  fetch(getApiUrl(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: userText })
@@ -430,14 +452,20 @@ function startTrainingPipeline() {
   connectTrainingWS();
 
   // Post rundown
-  fetch(LOCAL_RUNDOWN_URL, {
+  var base = getBaseUrl();
+  if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !base) {
+    alert('Please configure your Backend Tunnel URL in Settings before training!');
+    return;
+  }
+
+  fetch(getRundownUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content: rundownText })
   }).then(function(r) {
     if (!r.ok) throw new Error("Failed to save rundown");
     // Start training
-    return fetch(LOCAL_TRAIN_URL, { method: "POST" });
+    return fetch(getTrainUrl(), { method: "POST" });
   }).then(function(r) {
     if (!r.ok && r.status !== 409) throw new Error("Failed to start training");
   }).catch(function(err) {
@@ -448,7 +476,7 @@ function startTrainingPipeline() {
 
 function connectTrainingWS() {
   if (wsTraining) wsTraining.close();
-  wsTraining = new WebSocket(LOCAL_WS_URL);
+  wsTraining = new WebSocket(getWsUrl());
   
   wsTraining.onmessage = function(event) {
     var data = JSON.parse(event.data);
@@ -708,6 +736,12 @@ function buildApp() {
     if (document.getElementById('mymodels-model-name')) document.getElementById('mymodels-model-name').textContent = savedName;
     if (document.getElementById('dashboard-model-name')) document.getElementById('dashboard-model-name').textContent = savedName;
     if (document.getElementById('test-model-name-header')) document.getElementById('test-model-name-header').textContent = "Testing: " + savedName;
+  }
+  
+  // Populate settings tunnel URL
+  var settingsUrlEl = document.getElementById('settings-backend-url');
+  if (settingsUrlEl) {
+    settingsUrlEl.value = getBaseUrl();
   }
 }
 
