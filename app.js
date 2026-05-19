@@ -108,6 +108,11 @@ function navigate(view) {
   document.querySelectorAll('.nav-item').forEach(function(n) {
     n.classList.toggle('active', n.dataset.view === view);
   });
+  
+  if (window.innerWidth <= 768) {
+    var sb = document.getElementById('sidebar');
+    if (sb) sb.classList.remove('mobile-open');
+  }
 }
 
 // ─── Chat Rendering ───────────────────────────────────────────────────────────
@@ -419,6 +424,11 @@ function toggleSidebar() {
   btn.querySelector('svg').style.transform = sidebarCollapsed ? 'rotate(180deg)' : '';
 }
 
+function toggleSidebarMobile() {
+  var sb = document.getElementById('sidebar');
+  if (sb) sb.classList.toggle('mobile-open');
+}
+
 // ─── Settings toggles ─────────────────────────────────────────────────────────
 function toggleSetting(key) {
   toggleStates[key] = !toggleStates[key];
@@ -668,6 +678,7 @@ function buildApp() {
   document.getElementById('app').innerHTML =
     '<nav class="navbar">' +
       '<div class="nav-logo">' +
+        '<button class="mobile-menu-btn" onclick="toggleSidebarMobile()">&#9776;</button>' +
         '<div class="logo-mark">MF</div>' +
         '<span>ModelForge</span>' +
       '</div>' +
