@@ -1,4 +1,9 @@
 // ─── Security Check & Configuration ──────────────────────────────────────────
+var metaViewport = document.querySelector('meta[name=viewport]');
+if (metaViewport) {
+  metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+}
+
 if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.endsWith(".local")) {
   var pwd = prompt("Enter access password to view demo:");
   if (pwd !== "madeira2026") {

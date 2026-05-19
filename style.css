@@ -26,7 +26,7 @@ body{font-family:'Inter',sans-serif;background:#f8f9fb;color:#111827;height:100v
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f8f9fb}
 /* CHAT VIEW */
 .chat-view{flex:1;display:flex;flex-direction:column;max-width:760px;width:100%;margin:0 auto;padding:0 16px;overflow:hidden}
-.chat-messages{flex:1;overflow-y:auto;padding:24px 0 8px;display:flex;flex-direction:column;gap:16px;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent}
+.chat-messages{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 0 8px;display:flex;flex-direction:column;gap:16px;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent}
 /* BUBBLES */
 .bubble-row{display:flex;gap:10px;align-items:flex-start}
 .bubble-row.user{flex-direction:row-reverse}
@@ -189,12 +189,13 @@ body{font-family:'Inter',sans-serif;background:#f8f9fb;color:#111827;height:100v
   .chat-view, .proposal-view, .training-view, .deploy-view, .dashboard-view, .settings-view, .billing-view {
     padding: 20px 12px;
   }
-  .bubble { max-width: 90%; }
+  .bubble { max-width: calc(100% - 48px); }
   .spec-grid { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .setting-row { flex-direction: column; align-items: flex-start; gap: 10px; }
   .setting-row > div:last-child { align-self: flex-end; }
   .model-list-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .sidebar-toggle { display: none; }
 }
 @media (max-width: 480px) {
   .stat-grid { grid-template-columns: 1fr; }
