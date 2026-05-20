@@ -1458,3 +1458,179 @@ REVOLUTIONARY RESPONSIVE & BREAKPOINT ENGINE
     display: none; /* Hide credits badge on small devices to prevent collision */
   }
 }
+
+/* --- LIGHT MODE / WHITE THEME PREMIUM OVERRIDES --- */
+.light-theme {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(124, 58, 237, 0.4);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --accent-purple: #7c3aed;
+  --accent-blue: #2563eb;
+  --accent-green: #059669;
+  --accent-red: #dc2626;
+  --accent-orange: #ea580c;
+  
+  --gradient-tech: linear-gradient(135deg, #7c3aed, #2563eb);
+  --glow-shadow: 0 4px 15px rgba(124, 58, 237, 0.12);
+}
+
+.light-theme .navbar {
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+.light-theme .nav-logo {
+  background: linear-gradient(90deg, #0f172a, #475569) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.light-theme .nav-item:hover {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-theme .nav-item.active {
+  background: rgba(124, 58, 237, 0.06) !important;
+  color: #7c3aed !important;
+}
+
+.light-theme .bubble-ai {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-theme .bubble-user {
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
+}
+
+.light-theme .card, 
+.light-theme .proposal-card, 
+.light-theme .price-card, 
+.light-theme .stat-card, 
+.light-theme .billing-card, 
+.light-theme .settings-section {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light-theme .price-card.popular {
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.15) !important;
+}
+
+.light-theme input, 
+.light-theme textarea {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.light-theme input:focus, 
+.light-theme textarea:focus {
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+}
+
+.light-theme .btn-outline {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #334155 !important;
+}
+.light-theme .btn-outline:hover {
+  background: #f1f5f9 !important;
+}
+
+.light-theme .logo-mark {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.light-theme .model-row {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+.light-theme .model-row:hover {
+  background: #f8fafc !important;
+}
+
+.light-theme .price-card-btn.outline {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #334155 !important;
+}
+.light-theme .price-card-btn.outline:hover {
+  background: #f1f5f9 !important;
+}
+
+.light-theme .toggle {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+.light-theme .toggle::after {
+  background: #ffffff !important;
+}
+.light-theme .toggle.on {
+  background: var(--accent-green) !important;
+}
+
+.light-theme .drop-zone {
+  border-color: rgba(124, 58, 237, 0.3) !important;
+  background: rgba(124, 58, 237, 0.02) !important;
+  color: #475569 !important;
+}
+.light-theme .drop-zone:hover {
+  background: rgba(124, 58, 237, 0.05) !important;
+  border-color: var(--accent-purple) !important;
+}
+
+.light-theme .phase-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-theme .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-theme .toggle-btn {
+  background: #f1f5f9 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --- LIGHT THEME EXTRA READABILITY & CONTRAST OVERRIDES --- */
+.light-theme h2,
+.light-theme h3,
+.light-theme .dash-header h2,
+.light-theme .settings-view h2,
+.light-theme .billing-view h2,
+.light-theme .proposal-view h2,
+.light-theme .deploy-view h2,
+.light-theme .proposal-card h3,
+.light-theme .price-card h3,
+.light-theme .billing-card h3 {
+  background: linear-gradient(90deg, #0f172a, #475569) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.light-theme .settings-section-title {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: var(--accent-purple) !important;
+}
+
+.light-theme .slider-wrap {
+  background: #f8fafc !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-theme ::placeholder {
+  color: #94a3b8 !important;
+}
+

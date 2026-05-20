@@ -899,6 +899,13 @@ function toggleSetting(key) {
   if (el) el.classList.toggle('on', toggleStates[key]);
 }
 
+function toggleLightTheme() {
+  var isLight = document.body.classList.toggle('light-theme');
+  localStorage.setItem('lightThemeActive', isLight ? 'true' : 'false');
+  var el = document.getElementById('t-lighttheme');
+  if (el) el.classList.toggle('on', isLight);
+}
+
 // ─── Training Websocket Pipeline integrations ────────────────────────────────
 var wsTraining = null;
 
@@ -1279,6 +1286,20 @@ function buildApp() {
   
   // Populate profiles
   updateProfileDOM();
+
+  // Bootstrap Light/White Theme preference
+  var lightActive = localStorage.getItem('lightThemeActive') === 'true';
+  if (lightActive) {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+  setTimeout(function() {
+    var toggleEl = document.getElementById('t-lighttheme');
+    if (toggleEl) {
+      toggleEl.classList.toggle('on', lightActive);
+    }
+  }, 100);
 }
 
 buildApp();

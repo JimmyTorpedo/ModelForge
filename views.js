@@ -425,6 +425,13 @@ var VIEW_SETTINGS = `
       </div>
       <button class="toggle on" id="t-reports" onclick="toggleSetting('reports')"></button>
     </div>
+    <div class="setting-row">
+      <div>
+        <label>White Theme (Light Mode)</label>
+        <div class="hint">Toggle between white background light mode and cyber dark mode</div>
+      </div>
+      <button class="toggle" id="t-lighttheme" onclick="toggleLightTheme()"></button>
+    </div>
   </div>
   
   <div class="settings-section" style="border-color:rgba(239,68,68,0.25)">
