@@ -430,7 +430,7 @@ var VIEW_SETTINGS = `
         <label>White Theme (Light Mode)</label>
         <div class="hint">Toggle between white background light mode and cyber dark mode</div>
       </div>
-      <button class="toggle" id="t-lighttheme" onclick="toggleLightTheme()"></button>
+      <button class="toggle on" id="t-lighttheme" onclick="toggleLightTheme()"></button>
     </div>
   </div>
   

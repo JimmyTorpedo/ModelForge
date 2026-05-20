@@ -11,10 +11,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="light-theme">
   <script>
-    if (localStorage.getItem('lightThemeActive') === 'true') {
-      document.body.classList.add('light-theme');
+    if (localStorage.getItem('lightThemeActive') === 'false') {
+      document.body.classList.remove('light-theme');
     }
   </script>
   <div id="app"></div>

@@ -1288,7 +1288,7 @@ function buildApp() {
   updateProfileDOM();
 
   // Bootstrap Light/White Theme preference
-  var lightActive = localStorage.getItem('lightThemeActive') === 'true';
+  var lightActive = localStorage.getItem('lightThemeActive') !== 'false';
   if (lightActive) {
     document.body.classList.add('light-theme');
   } else {
