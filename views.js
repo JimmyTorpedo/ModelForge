@@ -153,20 +153,37 @@ var VIEW_DEPLOYMENT = `
   <p class="sub">Select how you want to run, scale, and host your custom AI model.</p>
   
   <div class="pricing-grid">
-    <div class="price-card">
+    <div class="price-card" id="price-card-selfhosted">
       <h3>&#128421; Self-Hosted</h3>
       <div class="price">&#8364;29<span>/month</span></div>
       <p>Run locally or on your private cloud. Ultimate privacy, zero data escape.</p>
+      
+      <div class="docker-snippet-wrap">
+        <div class="snippet-title">Docker Run command</div>
+        <div class="snippet-body">
+          <code id="docker-command-text">docker run -d -p 8000:8000 -v ./models:/app/models modelforge:latest</code>
+          <button class="copy-snippet-btn" onclick="copyDockerCommand(this)" title="Copy Docker Command">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          </button>
+        </div>
+      </div>
+
       <ul>
         <li>Model weights download (GGUF)</li>
         <li>Docker runtime setup files</li>
         <li>Unlimited local API operations</li>
         <li>Community forum access</li>
       </ul>
-      <button class="price-card-btn outline" onclick="alert('Your local API Key: mf_live_45a0b73c91e82d')">Generate API Key</button>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:auto;">
+        <button class="price-card-btn outline" style="flex:1" onclick="generateApiKey(this)">Generate API Key</button>
+        <div class="api-key-chip hidden" id="live-api-key-wrap">
+          <code id="live-api-key">mf_live_45a0...</code>
+          <button class="copy-key-btn" onclick="copyApiKeyText(this)">Copy</button>
+        </div>
+      </div>
     </div>
     
-    <div class="price-card popular">
+    <div class="price-card popular" id="price-card-managedcloud">
       <div class="popular-badge">Recommended</div>
       <h3>&#9729; Managed Cloud</h3>
       <div class="price">Pay-per-token</div>
@@ -185,7 +202,7 @@ var VIEW_DEPLOYMENT = `
       <button class="price-card-btn filled" onclick="alert('Managed deployment initiated! Setting up cloud instance...')">Deploy Model</button>
     </div>
     
-    <div class="price-card">
+    <div class="price-card" id="price-card-buyoutright">
       <h3>&#128190; Buy Outright</h3>
       <div class="price">&#8364;499<span> one-time</span></div>
       <p>Own the fine-tuned model weights forever. Full IP ownership and freedom.</p>
@@ -203,7 +220,7 @@ var VIEW_DEPLOYMENT = `
 var VIEW_DASHBOARD = `
 <div class="dashboard-view">
   <div class="dash-header">
-    <h2 id="dash-header-title">Welcome, John &#128075;</h2>
+    <h2 id="dash-header-title">Welcome, John <span class="emoji">&#128075;</span></h2>
     <p>Here is the health metrics and status of your local AI engine.</p>
   </div>
   

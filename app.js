@@ -290,7 +290,7 @@ function updateProfileDOM() {
   
   // Dashboard & Navigation titles
   var dashHeaderEl = document.getElementById('dash-header-title');
-  if (dashHeaderEl) dashHeaderEl.textContent = "Welcome back, " + name + " 👋";
+  if (dashHeaderEl) dashHeaderEl.innerHTML = "Welcome back, " + esc(name) + ' <span class="emoji">👋</span>';
   var dashCreditsEl = document.getElementById('dash-stat-credits');
   if (dashCreditsEl) dashCreditsEl.textContent = credits;
   
@@ -1300,6 +1300,177 @@ function buildApp() {
       toggleEl.classList.toggle('on', lightActive);
     }
   }, 100);
+
+  // Initialize first-time onboarding check
+  setTimeout(function() {
+    showOnboardingWizard();
+    var chosenUsecase = localStorage.getItem('userUsecase');
+    if (chosenUsecase) {
+      highlightOptimalPricing(chosenUsecase);
+    }
+  }, 300);
+}
+
+// ─── First-Time Onboarding Wizard & Personalization Handlers ─────────────────
+function showOnboardingWizard() {
+  if (localStorage.getItem('userUsecase')) return;
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'onboarding-wizard';
+  overlay.className = 'wizard-overlay';
+  
+  overlay.innerHTML = `
+    <div class="wizard-box">
+      <div class="wizard-logo">
+        <div class="logo-mark">MF</div>
+        <h2 style="margin:0;font-size:22px;background:linear-gradient(90deg, #fff, #9ca3af);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ModelForge</h2>
+      </div>
+      <h3>Choose Your Primary Workspace Type</h3>
+      <p class="wizard-subtitle">We will customize your local database entity, statistics telemetry metrics, and deployment highlights to match your workflow.</p>
+      
+      <div class="wizard-grid">
+        <div class="wizard-card" onclick="setUsecase('education')">
+          <div class="wizard-card-icon">🎓</div>
+          <h4>Education</h4>
+          <p>Ideal for students, academics, and researchers exploring fine-tuning limits.</p>
+        </div>
+        <div class="wizard-card" onclick="setUsecase('hobby')">
+          <div class="wizard-card-icon">🧪</div>
+          <h4>Personal Hobby</h4>
+          <p>Perfect for makers, creators, and tinkerers building local assistant adapters.</p>
+        </div>
+        <div class="wizard-card" onclick="setUsecase('solodev')">
+          <div class="wizard-card-icon">🚀</div>
+          <h4>Solo Developer</h4>
+          <p>Optimized for indie hackers, single-operator startups, and Docker API setups.</p>
+        </div>
+        <div class="wizard-card" onclick="setUsecase('companydev')">
+          <div class="wizard-card-icon">🏢</div>
+          <h4>Company Developer</h4>
+          <p>Engineered for enterprise teams building secure database sync pipelines.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function setUsecase(choice) {
+  localStorage.setItem('userUsecase', choice);
+  
+  // Dynamic Workspace Scaffolding
+  if (choice === 'education') {
+    localStorage.setItem('profile_name', 'Academic Researcher');
+    localStorage.setItem('profile_company', 'Quantum Lab');
+  } else if (choice === 'hobby') {
+    localStorage.setItem('profile_name', 'Hobbyist Maker');
+    localStorage.setItem('profile_company', 'Creative Hub');
+  } else if (choice === 'solodev') {
+    localStorage.setItem('profile_name', 'Indie Builder');
+    localStorage.setItem('profile_company', 'Solo Dev Co.');
+  } else if (choice === 'companydev') {
+    localStorage.setItem('profile_name', 'Lead Software Architect');
+    localStorage.setItem('profile_company', 'Acme Corp');
+  }
+  
+  var overlay = document.getElementById('onboarding-wizard');
+  if (overlay) {
+    overlay.classList.add('fade-out');
+    setTimeout(function() { overlay.remove(); }, 400);
+  }
+  
+  // Re-run DOM updates
+  updateProfileDOM();
+  highlightOptimalPricing(choice);
+  
+  // Pre-load a custom message from AI explaining the workspace profile setup
+  setTimeout(function() {
+    var greetingMsg = "Awesome choice! 🚀 I've tailored your dashboard settings and configured optimal deployment suggestions for **" + choice.toUpperCase() + "**.\n\n" +
+      "Your default entity profile is now synced as **" + localStorage.getItem('profile_company') + "**. Feel free to run model tests or upload training PDF documents anytime.";
+    messages.push({ role: 'ai', text: greetingMsg });
+    renderMessages();
+  }, 600);
+}
+
+function highlightOptimalPricing(choice) {
+  var cards = ['price-card-selfhosted', 'price-card-managedcloud', 'price-card-buyoutright'];
+  cards.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('popular', 'optimal-highlight');
+      // Remove any previously injected popular badges
+      var bad = el.querySelector('.popular-badge');
+      if (bad) bad.remove();
+    }
+  });
+
+  if (choice === 'solodev' || choice === 'hobby') {
+    var selfHostedEl = document.getElementById('price-card-selfhosted');
+    if (selfHostedEl) {
+      selfHostedEl.classList.add('popular', 'optimal-highlight');
+      var badge = document.createElement('div');
+      badge.className = 'popular-badge';
+      badge.textContent = 'Best for Solo Devs';
+      selfHostedEl.appendChild(badge);
+    }
+  } else if (choice === 'companydev') {
+    var managedEl = document.getElementById('price-card-managedcloud');
+    if (managedEl) {
+      managedEl.classList.add('popular', 'optimal-highlight');
+      var badge = document.createElement('div');
+      badge.className = 'popular-badge';
+      badge.textContent = 'Recommended for Teams';
+      managedEl.appendChild(badge);
+    }
+  } else {
+    var buyoutEl = document.getElementById('price-card-buyoutright');
+    if (buyoutEl) {
+      buyoutEl.classList.add('popular', 'optimal-highlight');
+      var badge = document.createElement('div');
+      badge.className = 'popular-badge';
+      badge.textContent = 'Optimal for Research';
+      buyoutEl.appendChild(badge);
+    }
+  }
+}
+
+// ─── Solo Developer Copy & Key Gen Helpers ──────────────────────────────────
+function copyDockerCommand(button) {
+  var txt = document.getElementById('docker-command-text').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    var originalSvg = button.innerHTML;
+    button.innerHTML = '<span style="font-size:10px;color:var(--accent-green);font-weight:700">Copied! ✓</span>';
+    button.style.background = 'rgba(16, 185, 129, 0.1)';
+    button.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    setTimeout(function() {
+      button.innerHTML = originalSvg;
+      button.style.background = '';
+      button.style.borderColor = '';
+    }, 2000);
+  });
+}
+
+function generateApiKey(btn) {
+  var wrap = document.getElementById('live-api-key-wrap');
+  if (wrap) {
+    wrap.classList.remove('hidden');
+    btn.classList.add('hidden');
+  }
+}
+
+function copyApiKeyText(btn) {
+  var text = "mf_live_45a0b73c91e82d";
+  navigator.clipboard.writeText(text).then(function() {
+    var original = btn.textContent;
+    btn.textContent = "Copied! ✓";
+    btn.style.color = "var(--accent-green)";
+    btn.style.borderColor = "var(--accent-green)";
+    setTimeout(function() {
+      btn.textContent = original;
+      btn.style.color = "";
+      btn.style.borderColor = "";
+    }, 2000);
+  });
 }
 
 buildApp();
