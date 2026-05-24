@@ -813,7 +813,7 @@ function commitCreateModel() {
   }
 
   var welcomeText = "Welcome to ModelForge! I'm your local AI onboarding specialist.\n\n" +
-    "I'm here to help you structure, customize, and fine-tune your proprietary open-source model **" + esc(name) + "** inside this workspace. No cloud data leaks.\n\n" +
+    "I'm here to help you structure, customize, and fine-tune your proprietary private AI model **" + esc(name) + "** inside this workspace. No cloud data leaks.\n\n" +
     "To begin designing your blueprint: what tasks should your custom model perform, and do you have raw manuals or FAQ PDFs I can extract training prompts from?";
 
   messages = [{ role: 'ai', text: welcomeText }];
@@ -1118,7 +1118,7 @@ function navigate(view) {
           if (m) name = m.name;
         }
         var welcomeText = "Welcome to ModelForge! I'm your local AI onboarding specialist.\n\n" +
-          "I'm here to help you structure, customize, and fine-tune your proprietary open-source model **" + esc(name) + "** inside this workspace. No cloud data leaks.\n\n" +
+          "I'm here to help you structure, customize, and fine-tune your proprietary private AI model **" + esc(name) + "** inside this workspace. No cloud data leaks.\n\n" +
           "To begin designing your blueprint: what tasks should your custom model perform, and do you have raw manuals or FAQ PDFs I can extract training prompts from?";
         
         messages = [{ role: 'ai', text: welcomeText }];
@@ -2292,7 +2292,7 @@ function buildApp() {
 
   // Seed default onboarding chat triggers
   var welcomeText = "Welcome to ModelForge! I'm your local AI onboarding specialist.\n\n" +
-    "I'm here to help you structure, customize, and fine-tune your proprietary open-source model using local hardware resources — no cloud data leaks.\n\n" +
+    "I'm here to help you structure, customize, and fine-tune your proprietary private AI model using local hardware resources — no cloud data leaks.\n\n" +
     "To begin designing your blueprint: what tasks should your custom model perform, and do you have raw manuals or FAQ PDFs I can extract training prompts from?";
 
   geminiHistory.push({ role: 'model', parts: [{ text: welcomeText }] });

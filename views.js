@@ -661,7 +661,7 @@ var VIEW_LANDING = `
   <div class="hero-section">
     <div class="hero-badge">Sovereign AI Infrastructure</div>
     <h1>The Custom AI Platform for B2B Teams &amp; Solo Devs</h1>
-    <p class="hero-subtitle">Build, train, and deploy private open-source models locally on your physical hardware or host them on our managed cloud. Zero cloud leakage, 100% data control.</p>
+    <p class="hero-subtitle">Build, train, and deploy private custom AI models locally on your physical hardware or host them on our managed cloud. Zero cloud leakage, 100% data control.</p>
     
     <div class="hero-ctas">
       <button class="btn-landing-primary" onclick="enterConsole()">Get Started Free →</button>
@@ -711,7 +711,7 @@ var VIEW_LANDING = `
   </div>
 
   <footer class="landing-footer">
-    <p>© 2026 ModelForge AI Technologies. Distributed under Sovereign Open Source.</p>
+    <p>© 2026 ModelForge AI Technologies. All Rights Reserved. Proprietary Commercial License.</p>
   </footer>
 </div>`;
 
