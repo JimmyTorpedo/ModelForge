@@ -1171,7 +1171,7 @@ function renderModelsList() {
     return `<div class="model-row">
       <div class="model-dot ${dotClass}" onclick="startModelTestChat('${m.tag}')" style="cursor:pointer"></div>
       <div class="model-name" onclick="startModelTestChat('${m.tag}')" style="cursor:pointer">${esc(m.name)}</div>
-      <div class="model-meta" onclick="startModelTestChat('${m.tag}')" style="cursor:pointer">${m.params} parameters &middot; Local RTX 4060 Ti &middot; ${statusText}</div>
+      <div class="model-meta" onclick="startModelTestChat('${m.tag}')" style="cursor:pointer">${m.params} parameters &middot; Secure Private GPU Node &middot; ${statusText}</div>
       <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
         <button class="model-badge" style="background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid var(--border-glass);cursor:pointer;padding:4px 10px" onclick="renameModel('${m.tag}')">Rename</button>
         <button class="model-badge" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);cursor:pointer;padding:4px 10px" onclick="deleteModel('${m.tag}')">Delete</button>
@@ -1226,7 +1226,7 @@ function renameModel(tag) {
 }
 
 function deleteModel(tag) {
-  if (!confirm("Are you sure you want to permanently delete '" + tag + "'? This will completely wipe all fine-tuned LoRA weights and directory folders from your local RTX 4060 Ti graphics card disk!")) return;
+  if (!confirm("Are you sure you want to permanently delete '" + tag + "'? This will completely wipe all fine-tuned LoRA weights and directory folders from your secure private GPU compute disk!")) return;
   
   customModels = customModels.filter(function(m) { return m.tag !== tag; });
   saveModelsLocal();
@@ -1391,7 +1391,7 @@ function callBuilderAI(userText, fileContext) {
     if (!userKey) {
       setTimeout(function() {
         messages = messages.filter(function(m) { return !m.typing; });
-        var warningText = "⚠️ **API Key Required**: To use the Cloud Gemini API, please enter your own **Google Gemini API Key** under **System Settings**.\n\nAlternatively, switch the **AI Engine** dropdown above to **Local GPU (Ollama)** to run completely offline on your local hardware!";
+        var warningText = "⚠️ **API Key Required**: To use the Cloud Gemini API, please enter your own **Google Gemini API Key** under **System Settings**.\n\nAlternatively, switch the **AI Engine** dropdown above to **Private GPU Node** to run completely offline on your secure dedicated hardware!";
         messages.push({ role: 'ai', text: warningText });
         renderMessages();
         saveOnboardingChatLocal();
@@ -1517,7 +1517,7 @@ function callLocalOnboardingFallback(sendBtn) {
     } else {
       state.pdfs = lastUserMsg;
       state.stage = 3;
-      responseText = "Perfect! I have captured all the necessary operational variables. Here is your workstation configuration blueprint:\n\n📊 **Compute Spec**: Local RTX Hardware\n📦 **Base Engine**: Qwen 2.5 (7B parameters)\n🧬 **Quantization**: 4-bit QLoRA (Rank 16, Alpha 16)\n⚙️ **Expected Epochs**: 10 (optimizing factual memory)\n\nWe are ready to review and generate the complete model training proposal! Click the button below to proceed. ✨";
+      responseText = "Perfect! I have captured all the necessary operational variables. Here is your workstation configuration blueprint:\n\n📊 **Compute Spec**: Private GPU Node Accelerator\n📦 **Base Engine**: Qwen 2.5 (7B parameters)\n🧬 **Quantization**: 4-bit QLoRA (Rank 16, Alpha 16)\n⚙️ **Expected Epochs**: 10 (optimizing factual memory)\n\nWe are ready to review and generate the complete model training proposal! Click the button below to proceed. ✨";
     }
 
     geminiHistory.push({ role: "model", parts: [{ text: responseText }] });
@@ -1850,6 +1850,39 @@ function startTrainingPipeline() {
   triggerTrainingApiCall(modelName);
 }
 
+async function cancelTrainingPipeline() {
+  if (!confirm("⚠️ WARNING: Are you sure you want to trigger a complete Safety Stop on the Secure GPU compute pipeline? This will instantly terminate the current run.")) return;
+  
+  var stopBtn = document.getElementById('btn-cancel-training');
+  if (stopBtn) {
+    stopBtn.disabled = true;
+    stopBtn.textContent = "Stopping Pipeline...";
+  }
+  
+  var baseUrl = getBaseUrl();
+  try {
+    var response = await fetch(baseUrl + "/train/stop", {
+      method: "POST",
+      headers: { "Accept": "application/json" }
+    });
+    
+    if (response.ok) {
+      alert("Safety Stop command processed. Training pipeline terminated.");
+    } else {
+      var err = await response.json();
+      alert("Error stopping pipeline: " + (err.detail || "Unknown error"));
+    }
+  } catch (e) {
+    console.error("Failed to call stop endpoint:", e);
+    alert("Connection error: Could not reach the local engine to stop training.");
+  } finally {
+    if (stopBtn) {
+      stopBtn.disabled = false;
+      stopBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg> Safety Stop Training ⚠️`;
+    }
+  }
+}
+
 function triggerTrainingApiCall(modelName) {
   if (!modelName) {
     modelName = getTrainingModelTag();
@@ -1939,6 +1972,7 @@ function connectTrainingWS() {
       document.getElementById("train-status-sub").textContent = data.message;
       document.getElementById("train-status-dot-top").style.background = "var(--accent-red)";
       document.getElementById("train-status-dot-top").style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+      showTrainingError(data.message);
     }
   };
   
@@ -2032,11 +2066,11 @@ function updateTrainingPhase(phase) {
     document.getElementById("training-credits-pct").textContent = "0.8 / 3.0";
   } else if (phase === 'training') {
     document.getElementById("train-status-text").textContent = "Status: Gradient Fine-Tuning";
-    document.getElementById("train-status-sub").textContent = "Training LoRA layers on local RTX 4060 Ti GPU...";
+    document.getElementById("train-status-sub").textContent = "Training LoRA layers on private dedicated GPU node...";
     document.getElementById("training-credits-pct").textContent = "1.8 / 3.0";
   } else if (phase === 'export') {
     document.getElementById("train-status-text").textContent = "Status: Compiling quantizations";
-    document.getElementById("train-status-sub").textContent = "Quantizing to 4-bit GGUF and loading in local Ollama service...";
+    document.getElementById("train-status-sub").textContent = "Quantizing to 4-bit GGUF and loading in private inference service...";
     document.getElementById("training-credits-pct").textContent = "2.8 / 3.0";
   }
   
@@ -2130,7 +2164,7 @@ function completeTraining(tag) {
   var dotExp = document.getElementById("phase-export-dot");
   var txtExp = document.getElementById("phase-export-text");
   if (dotExp) { dotExp.style.background = "var(--accent-green)"; dotExp.style.animation = "none"; dotExp.style.boxShadow = "0 0 8px var(--accent-green)"; }
-  if (txtExp) { txtExp.textContent = "GGUF Quantization & Ollama Export complete ✓"; }
+  if (txtExp) { txtExp.textContent = "GGUF Quantization & Model Export complete ✓"; }
   
   updateTrainingProgress(100, 100, 100, 0.0);
   renderModelsList();
@@ -2621,7 +2655,7 @@ var tickerMessages = [
   '<span class="t-green">[SYSTEM]</span> Save checkpoint success: modelforge-latest.safetensors',
   '<span class="t-purple">[QLORA]</span>  Training loop completed in 12.4 minutes on local hardware.',
   '<span class="t-green">[SYSTEM]</span> Quantizing weight adapters to GGUF format (Q4_K_M)...',
-  '<span class="t-blue">[CLIENT]</span> Uploading adapter to local Ollama library directory...',
+  '<span class="t-blue">[CLIENT]</span> Uploading adapter to secure private model library directory...',
   '<span class="t-green">[SYSTEM]</span> Listening for new training dataset triggers...'
 ];
 var tickerIndex = 0;

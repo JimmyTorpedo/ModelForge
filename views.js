@@ -23,7 +23,7 @@ var VIEW_BUILDER = `
       <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">AI Engine:</span>
       <select class="premium-modal-input" id="builder-engine-selector" onchange="changeBuilderEngine(this.value)" style="padding: 6px 12px; font-size:12px; margin:0; width:auto; min-width:145px;">
         <option value="gemini">Google Gemini API</option>
-        <option value="gpu">Local GPU (Ollama)</option>
+        <option value="gpu">Private GPU Node</option>
       </select>
     </div>
   </div>
@@ -66,11 +66,11 @@ var VIEW_BUILDER = `
             </div>
           </div>
           
-          <div class="gemini-popover-item" id="popover-item-gpu" onclick="selectEnginePopover('gpu', 'Local GPU', event)">
+          <div class="gemini-popover-item" id="popover-item-gpu" onclick="selectEnginePopover('gpu', 'Private GPU', event)">
             <div class="popover-item-check">&#10003;</div>
             <div class="popover-item-content">
-              <div class="popover-item-title">Local GPU (Ollama)</div>
-              <div class="popover-item-desc">Fast, secure local reasoning - zero cloud leaks</div>
+              <div class="popover-item-title">Private GPU Node</div>
+              <div class="popover-item-desc">Fast, secure dedicated reasoning — zero cloud leaks</div>
             </div>
           </div>
           
@@ -113,7 +113,7 @@ var VIEW_PROJECTS = `
 var VIEW_PROPOSAL = `
 <div class="proposal-view">
   <h2>Your AI Model Proposal</h2>
-  <p class="proposal-subtitle">Review the blueprint specification before starting the local RTX 4060 Ti fine-tuning.</p>
+  <p class="proposal-subtitle">Review the blueprint specification before starting the dedicated private GPU fine-tuning.</p>
   
   <div class="proposal-card">
     <h3>Model Blueprint</h3>
@@ -152,7 +152,7 @@ var VIEW_PROPOSAL = `
       <li style="font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px"><span style="color:var(--accent-purple);font-weight:800">&#10003;</span> Ingest and synthesize PDF document facts</li>
       <li style="font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px"><span style="color:var(--accent-purple);font-weight:800">&#10003;</span> Strictly bounded question answering (no hallucination)</li>
       <li style="font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px"><span style="color:var(--accent-purple);font-weight:800">&#10003;</span> Dedicated local REST API endpoint and WebSocket state</li>
-      <li style="font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px"><span style="color:var(--accent-purple);font-weight:800">&#10003;</span> Portable model weights ready for GGUF/Ollama export</li>
+      <li style="font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px"><span style="color:var(--accent-purple);font-weight:800">&#10003;</span> Portable model weights ready for production GGUF export</li>
     </ul>
   </div>
   
@@ -173,7 +173,7 @@ var VIEW_TRAINING = `
     <div class="status-dot" id="train-status-dot-top"></div>
     <div>
       <div style="font-size:15px;font-weight:700;color:var(--text-primary)" id="train-status-text">Status: Starting Engine...</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" id="train-status-sub">Connecting to local RTX 4060 Ti hardware...</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" id="train-status-sub">Connecting to secure private GPU compute node...</div>
     </div>
   </div>
   
@@ -223,7 +223,7 @@ var VIEW_TRAINING = `
     </div>
     <div class="phase-card" id="phase-export">
       <div class="phase-dot" id="phase-export-dot"></div>
-      <div style="font-size:13.5px;color:var(--text-secondary);font-weight:500" id="phase-export-text">GGUF Quantization &amp; Ollama Export (pending)</div>
+      <div style="font-size:13.5px;color:var(--text-secondary);font-weight:500" id="phase-export-text">GGUF Quantization &amp; Inference Export (pending)</div>
     </div>
   </div>
   
@@ -237,6 +237,10 @@ var VIEW_TRAINING = `
   
   <div style="margin-top:24px;text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
     <button class="btn-outline" style="padding:10px 24px;font-size:13px;" onclick="navigate('proposal')">Back</button>
+    <button id="btn-cancel-training" class="project-action-btn delete" style="padding:10px 24px;font-size:13px;background:rgba(239, 68, 68, 0.08) !important; color:#fca5a5 !important; border-color:rgba(248, 113, 113, 0.2) !important; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="cancelTrainingPipeline()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+      Safety Stop Training ⚠️
+    </button>
     <button class="btn-primary" style="padding:10px 24px;font-size:13px;" onclick="navigate('deployment')">Preview Deployment Tiers</button>
     <button class="btn-outline" style="padding:10px 24px;font-size:13px;" onclick="previewTrainingData()">View Training Data</button>
   </div>
@@ -582,7 +586,7 @@ var VIEW_SETTINGS = `
       </div>
       <select class="premium-modal-input" id="settings-default-engine" onchange="saveDefaultEngineSetting(this.value)" style="width: 180px; margin: 0; padding: 6px 12px;">
         <option value="gemini">Google Gemini API</option>
-        <option value="gpu">Local GPU (Ollama)</option>
+        <option value="gpu">Private GPU Node</option>
       </select>
     </div>
     
@@ -673,12 +677,12 @@ var VIEW_LANDING = `
     <div class="terminal-simulator">
       <div class="terminal-header">
         <div class="terminal-dots"><span></span><span></span><span></span></div>
-        <div class="terminal-title">modelforge-qlora-engine ~ rtx-4060ti-bridge</div>
+        <div class="terminal-title">modelforge-qlora-engine ~ private-compute-bridge</div>
         <div class="terminal-badge">LIVE TELEMETRY</div>
       </div>
       <div class="terminal-content" id="terminal-ticker-box">
         <div class="t-line"><span class="t-green">[SYSTEM]</span> Initializing physical hardware bridge on port 8000...</div>
-        <div class="t-line"><span class="t-green">[SYSTEM]</span> Local RTX 4060 Ti active (16GB VRAM, PCIe Gen 4)</div>
+        <div class="t-line"><span class="t-green">[SYSTEM]</span> Private Dedicated GPU Node active (High-speed VRAM, PCIe Gen 4)</div>
         <div class="t-line"><span class="t-purple">[QLORA]</span>  Pre-loading foundation weights: Qwen-7B-Instruct (4-bit quantized)</div>
         <div class="t-line"><span class="t-purple">[QLORA]</span>  Active adapter: none (listening for dataset trigger)</div>
         <div class="t-line"><span class="t-blue">[CLIENT]</span> Connected to Cloud Ledger Database (Supabase Sync active)</div>
