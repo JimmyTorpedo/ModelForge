@@ -9,17 +9,67 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=1.0.7" />
 </head>
 <body class="light-theme">
   <script>
-    if (localStorage.getItem('lightThemeActive') === 'false') {
-      document.body.classList.remove('light-theme');
+    (function() {
+      var storageAvailable = false;
+      try {
+        var storage = window.localStorage;
+        storage.setItem('__test_storage__', 'test');
+        storage.removeItem('__test_storage__');
+        storageAvailable = true;
+      } catch (e) {
+        console.warn("localStorage is not available, using in-memory fallback.");
+      }
+
+      if (!storageAvailable) {
+        var store = {};
+        var mockStorage = {
+          getItem: function(key) {
+            return store.hasOwnProperty(key) ? store[key] : null;
+          },
+          setItem: function(key, value) {
+            store[key] = String(value);
+          },
+          removeItem: function(key) {
+            delete store[key];
+          },
+          clear: function() {
+            store = {};
+          },
+          get length() {
+            return Object.keys(store).length;
+          },
+          key: function(index) {
+            var keys = Object.keys(store);
+            return keys[index] || null;
+          }
+        };
+        try {
+          Object.defineProperty(window, 'localStorage', {
+            value: mockStorage,
+            writable: true,
+            configurable: true
+          });
+        } catch (e) {
+          window.localStorage = mockStorage;
+        }
+      }
+    })();
+
+    try {
+      if (localStorage.getItem('lightThemeActive') === 'false') {
+        document.body.classList.remove('light-theme');
+      }
+    } catch (e) {
+      console.error("Error setting initial theme class:", e);
     }
   </script>
   <div id="app"></div>
   <!-- Load view templates first, then app logic -->
-  <script src="views.js"></script>
-  <script src="app.js"></script>
+  <script src="views.js?v=1.0.7"></script>
+  <script src="app.js?v=1.0.7"></script>
 </body>
 </html>

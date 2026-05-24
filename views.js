@@ -8,6 +8,25 @@ and training pages. Uses the premium dark glassmorphism CSS class framework.
 
 var VIEW_BUILDER = `
 <div class="chat-view">
+  <div class="dash-header" style="padding: 20px 0 14px; border-bottom: 1px solid var(--border-glass); margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="navigate('mymodels')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);display:flex;padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <h2 id="builder-model-name-header" style="margin:0;font-size:20px">Building Model: modelforge-custom</h2>
+      </div>
+      <p id="builder-engine-status-text" style="margin: 6px 0 0 34px; font-size:13px; color:var(--accent-purple); font-weight:600; display:flex; align-items:center; gap:6px">
+        <span id="builder-engine-dot" style="width:7px;height:7px;border-radius:50%;background:var(--accent-purple);box-shadow:0 0 8px var(--accent-purple);display:inline-block;animation:pulse 1.5s infinite"></span> 
+        <span id="builder-engine-name">Gemini Interview Specialist Active</span>
+      </p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">AI Engine:</span>
+      <select class="premium-modal-input" id="builder-engine-selector" onchange="changeBuilderEngine(this.value)" style="padding: 6px 12px; font-size:12px; margin:0; width:auto; min-width:145px;">
+        <option value="gemini">Google Gemini API</option>
+        <option value="gpu">Local GPU (Ollama)</option>
+      </select>
+    </div>
+  </div>
   <div class="chat-messages" id="chat-messages"></div>
   <div class="input-bar">
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
@@ -21,16 +40,73 @@ var VIEW_BUILDER = `
     </div>
     <input type="file" id="file-input" accept=".pdf" class="hidden" onchange="handleFile(this.files[0])"/>
     <div class="input-row">
-      <div class="input-wrap">
-        <textarea id="chat-input" rows="1" placeholder="Describe the specific tasks you want your custom AI model to do..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrow(this)"></textarea>
+      <div class="input-wrap" style="position:relative;">
+        <textarea id="chat-input" rows="1" placeholder="Describe the specific tasks you want your custom AI model to do..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrow(this)" style="padding-right: 175px;"></textarea>
+        
+        <div class="chat-engine-pill-wrap" style="position:absolute; right:48px; top:50%; transform:translateY(-50%); display:flex; align-items:center; z-index: 10;">
+          <!-- Model Switcher Pill -->
+          <div class="gemini-pill-btn" onclick="toggleEngineDropdown(event)">
+            <span id="gemini-pill-active-name">Gemini Pro</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left: 4px;"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+
+        <!-- Upload icon -->
         <button class="upload-btn" onclick="document.getElementById('file-input').click()" title="Upload PDF">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
+
+        <!-- Gemini Popover Dropdown menu -->
+        <div class="gemini-dropdown-popover hidden" id="gemini-engine-popover">
+          <div class="gemini-popover-item active" id="popover-item-gemini" onclick="selectEnginePopover('gemini', 'Gemini Pro', event)">
+            <div class="popover-item-check">&#10003;</div>
+            <div class="popover-item-content">
+              <div class="popover-item-title">Gemini 1.5 Pro</div>
+              <div class="popover-item-desc">Math, programming, and advanced tasks</div>
+            </div>
+          </div>
+          
+          <div class="gemini-popover-item" id="popover-item-gpu" onclick="selectEnginePopover('gpu', 'Local GPU', event)">
+            <div class="popover-item-check">&#10003;</div>
+            <div class="popover-item-content">
+              <div class="popover-item-title">Local GPU (Ollama)</div>
+              <div class="popover-item-desc">Fast, secure local reasoning - zero cloud leaks</div>
+            </div>
+          </div>
+          
+          <div class="gemini-popover-divider"></div>
+          
+          <div class="gemini-popover-item disabled" style="opacity: 0.5; cursor: not-allowed;" onclick="event.stopPropagation()">
+            <div class="popover-item-check"></div>
+            <div class="popover-item-content">
+              <div class="popover-item-title" style="display:flex; align-items:center; gap:6px;">Thinking Mode <span style="font-size:9px; background:var(--accent-purple); color:#fff; padding:1px 5px; border-radius:10px; font-weight:700;">PRO</span></div>
+              <div class="popover-item-desc">Deep reasoning and step-by-step logic</div>
+            </div>
+          </div>
+        </div>
       </div>
       <button class="send-btn" id="send-btn" onclick="sendMessage()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
+  </div>
+</div>`;
+
+var VIEW_PROJECTS = `
+<div class="dashboard-view">
+  <div class="dash-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div>
+      <h2>Project Hub</h2>
+      <p>Organize, build, and deploy your custom AI model adapters under isolated directory folders.</p>
+    </div>
+    <button class="new-model-btn" onclick="showCreateProjectModal()" style="font-size: 13.5px; padding: 10px 20px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Project
+    </button>
+  </div>
+  
+  <div class="projects-grid" id="projects-grid-container">
+    <!-- Generated Dynamically -->
   </div>
 </div>`;
 
@@ -60,6 +136,16 @@ var VIEW_PROPOSAL = `
     </div>
   </div>
   
+  <div class="proposal-card" id="proposal-specs-card">
+    <h3>Gathered Specifications</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; font-size: 13.5px; line-height: 1.5;">
+      <div><span style="color:var(--text-secondary)">Use Case / Industry:</span> <strong id="spec-usecase" style="color:var(--text-primary)">Customer Support Agent</strong></div>
+      <div><span style="color:var(--text-secondary)">Expected Daily Scale:</span> <strong id="spec-scale" style="color:var(--text-primary)">Not specified</strong></div>
+      <div><span style="color:var(--text-secondary)">Tone of Voice:</span> <strong id="spec-tone" style="color:var(--text-primary)">Professional / Conversational</strong></div>
+      <div><span style="color:var(--text-secondary)">Internal PDF Training Data:</span> <strong id="spec-pdfs" style="color:var(--text-primary)">None uploaded</strong></div>
+    </div>
+  </div>
+  
   <div class="proposal-card">
     <h3>Trained Capabilities</h3>
     <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
@@ -83,11 +169,23 @@ var VIEW_PROPOSAL = `
 
 var VIEW_TRAINING = `
 <div class="training-view">
-  <div class="status-banner">
+  <div class="status-banner" style="margin-bottom: 20px;">
     <div class="status-dot" id="train-status-dot-top"></div>
     <div>
       <div style="font-size:15px;font-weight:700;color:var(--text-primary)" id="train-status-text">Status: Starting Engine...</div>
       <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" id="train-status-sub">Connecting to local RTX 4060 Ti hardware...</div>
+    </div>
+  </div>
+  
+  <div id="training-error-card" class="phase-card hidden" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08); margin: 0 0 24px; padding: 16px; display: none; gap: 14px; align-items: flex-start; text-align: left; border-radius: 12px; border: 1px solid rgba(239,68,68,0.25);">
+    <div class="phase-dot" style="background: #f87171; box-shadow: 0 0 8px #ef4444; width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;"></div>
+    <div style="flex: 1;">
+      <div style="font-size:14px; font-weight:700; color:#fca5a5;">Connection / Pipeline Error</div>
+      <div id="training-error-details" style="font-size:12.5px; color:#fecaca; margin-top: 4px; line-height: 1.4; font-family: monospace;">Unknown connection error.</div>
+      <div style="margin-top: 10px; display: flex; gap: 8px;">
+        <button class="model-badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-family: inherit;" onclick="retryTrainingPipeline()">Retry Connection</button>
+        <button class="model-badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-glass); color: var(--text-primary); cursor: pointer; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-family: inherit;" onclick="useAlternativeLocalUrl()">Try 127.0.0.1</button>
+      </div>
     </div>
   </div>
   
@@ -218,79 +316,40 @@ var VIEW_DEPLOYMENT = `
 </div>`;
 
 var VIEW_DASHBOARD = `
-<div class="dashboard-view">
-  <div class="dash-header">
-    <h2 id="dash-header-title">Welcome, John <span class="emoji">&#128075;</span></h2>
-    <p>Here is the health metrics and status of your local AI engine.</p>
-  </div>
-  
-  <div class="stat-grid">
-    <div class="stat-card">
-      <div class="s-label">Active Models</div>
-      <div class="s-value" id="dash-stat-active-models">1</div>
-      <div class="s-change">&#8593; 1 trained local</div>
-    </div>
-    <div class="stat-card">
-      <div class="s-label">Credits Remaining</div>
-      <div class="s-value" id="dash-stat-credits">10</div>
-      <div class="s-change">Account balance</div>
-    </div>
-    <div class="stat-card">
-      <div class="s-label">Direct API Queries</div>
-      <div class="s-value">1.2k</div>
-      <div class="s-change">&#8593; 24% vs last week</div>
-    </div>
-    <div class="stat-card">
-      <div class="s-label">Avg Local Latency</div>
-      <div class="s-value">0.72s</div>
-      <div class="s-change">&#8595; 15% VRAM optimized</div>
-    </div>
-  </div>
-  
-  <div class="model-list">
-    <div class="model-list-header">
-      <h3>My Local AI Models</h3>
-      <button class="new-model-btn" onclick="navigate('builder')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-        Build Model
-      </button>
-    </div>
-    <div class="model-row" onclick="navigate('mymodels')">
-      <div class="model-dot ready"></div>
-      <div class="model-name" id="dashboard-model-name">modelforge-custom</div>
-      <div class="model-meta">7B parameters &middot; Ready for Local Inference</div>
-      <div class="model-badge badge-ready">Online</div>
-    </div>
+<div class="dashboard-view" style="padding: 24px;">
+  <div class="projects-grid" id="workspaces-grid-container">
+    <!-- Generated Dynamically -->
   </div>
 </div>`;
 
 var VIEW_MYMODELS = `
 <div class="dashboard-view">
-  <div class="dash-header">
-    <h2>Model Inventory</h2>
-    <p>Manage, test, and permanently edit your fine-tuned model directories.</p>
+  <div class="dash-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 20px; margin-bottom: 24px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px">
+      <button onclick="navigate('dashboard')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);display:flex;padding:0" title="Back to Workspaces"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div id="workspace-detail-icon-wrap" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139,92,246,0.12); color: var(--accent-purple); display:flex; align-items:center; justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h2 id="workspace-detail-title" style="margin:0; font-size:24px">Workspace: Main Workspace</h2>
+      <span class="model-badge" id="workspace-detail-badge" style="background:rgba(139,92,246,0.1);color:#c084fc;border:1px solid rgba(139,92,246,0.2);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px;">Solo Developer</span>
+    </div>
+    <p id="workspace-detail-desc" style="color:var(--text-secondary); font-size:13.5px; margin-left:44px; margin-bottom:16px; line-height: 1.5;">Active workspace for housing custom-trained LoRA models.</p>
+    <div style="display:flex; gap:10px; margin-left:44px">
+      <button class="model-badge" style="background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid var(--border-glass);cursor:pointer;padding:6px 14px;border-radius:8px;font-size:12px;" onclick="showCustomizeWorkspaceModal(activeWorkspaceId)">Customize Workspace</button>
+      <button class="model-badge" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);cursor:pointer;padding:6px 14px;border-radius:8px;font-size:12px;" onclick="deleteActiveWorkspace()">Delete Workspace</button>
+    </div>
   </div>
   
   <div class="model-list">
-    <div class="model-list-header">
-      <h3>Available Local LoRA Adapters</h3>
-      <button class="new-model-btn" onclick="navigate('builder')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-        Build Model
+    <div class="model-list-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+      <h3 style="font-size:16px; font-weight:700;">Custom LLMs & AI Models</h3>
+      <button class="new-model-btn" onclick="showCreateModelModal()" style="font-size: 13px; padding: 8px 16px; background: var(--gradient-tech); box-shadow: var(--glow-shadow);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
+        Create Custom LLM
       </button>
     </div>
     <div class="model-list-body" id="mymodels-list-container">
       <!-- Generated Dynamically -->
-      <div class="model-row">
-        <div class="model-dot ready" onclick="navigate('modeltest')" style="cursor:pointer"></div>
-        <div class="model-name" id="mymodels-model-name" onclick="navigate('modeltest')" style="cursor:pointer">modelforge-custom</div>
-        <div class="model-meta" onclick="navigate('modeltest')" style="cursor:pointer">7B params &middot; Local RTX 4060 Ti &middot; Ready</div>
-        <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
-          <button class="model-badge" style="background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid var(--border-glass);cursor:pointer;padding:4px 10px" onclick="renameModel()">Rename</button>
-          <button class="model-badge" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);cursor:pointer;padding:4px 10px" onclick="deleteModel('modelforge-custom')">Delete</button>
-          <div class="model-badge badge-ready" onclick="navigate('modeltest')" style="cursor:pointer">Test Chat</div>
-        </div>
-      </div>
     </div>
   </div>
 </div>`;
@@ -321,144 +380,373 @@ var VIEW_MODELTEST = `
 </div>`;
 
 var VIEW_BILLING = `
-<div class="billing-view">
-  <h2>Resource Billing</h2>
-  
-  <div class="billing-card">
-    <h3>Credit Ledger Balance</h3>
-    <div style="font-size:36px;font-weight:800;color:var(--text-primary);display:flex;align-items:baseline;gap:6px">
-      <span id="billing-credits-balance">10</span> 
-      <span style="font-size:15px;color:var(--text-secondary);font-weight:500">credits remaining</span>
-    </div>
-    <div class="credit-bar-wrap">
-      <div class="credit-bar" id="billing-credit-bar-progress" style="width: 70%"></div>
-    </div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px" id="billing-usage-summary">3 of 10 monthly credits consumed</div>
-    <button class="btn-primary" style="padding:10px 24px;font-size:13px;width:auto" onclick="alert('Top-up checkout mock triggered!')">+ Add Balance Credits</button>
+<div class="billing-view" style="padding: 24px;">
+  <div class="billing-status-banner">
+    <span class="status-dot pulsing"></span>
+    <span class="status-text">SYSTEM STATUS: NOMINAL</span>
+    <span class="divider">|</span>
+    <span class="latency-text">API Latency: 42ms</span>
+    <span class="divider">|</span>
+    <span class="compute-text">Compute: 18%</span>
   </div>
   
-  <div class="billing-card">
-    <h3>Current Subscription</h3>
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div>
-        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">Enterprise Starter Plan</div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">10 credits credited monthly &middot; Renews June 1, 2026</div>
+  <div class="billing-header" style="margin-bottom:24px">
+    <h2>Billing Overview</h2>
+    <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Manage your subscriptions, usage, and ledger history.</p>
+  </div>
+  
+  <div class="usage-card">
+    <div class="usage-card-left">
+      <div class="usage-label">CURRENT MONTH USAGE</div>
+      <div class="usage-amount">$142.50 <span class="usd">USD</span></div>
+      <div class="usage-progress-wrap">
+        <div class="usage-progress-bar" style="width: 45%;"></div>
       </div>
-      <button class="topup-btn" onclick="alert('Enterprise tier upgrade is currently handled by customer support.')">Upgrade Plan</button>
+      <div class="usage-progress-label">45% of $300 limit</div>
+    </div>
+    <div class="usage-card-right">
+      <button class="pay-now-btn" onclick="triggerPaymentCheckout()">PAY NOW</button>
+      <div class="autopay-note">Auto-pay enabled on 1st of month</div>
     </div>
   </div>
   
-  <div class="billing-card">
-    <h3>Recent Ledger Transactions</h3>
-    <div style="display:flex;flex-direction:column;gap:12px" id="billing-ledger-list">
-      <div style="display:flex;justify-content:space-between;font-size:14px;border-bottom:1px solid var(--border-glass);padding-bottom:10px">
-        <span style="color:var(--text-secondary)">Fine-tuning model: modelforge-custom</span>
-        <span style="color:#f87171;font-weight:700">-3 credits</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:14px">
-        <span style="color:var(--text-secondary)">Standard Account Provisioning</span>
-        <span style="color:var(--accent-green);font-weight:700">+10 credits</span>
-      </div>
+  <div class="billing-section-title">Subscription Tiers</div>
+  <div class="tiers-grid">
+    <div class="tier-card">
+      <div class="tier-name">Standard</div>
+      <div class="tier-price">$29<span class="mo">/mo</span></div>
+      <ul class="tier-features">
+        <li><span class="tick">✓</span> Up to 10k API calls</li>
+        <li><span class="tick">✓</span> Basic Support</li>
+      </ul>
+      <button class="tier-btn" onclick="selectSubTier('Standard')">Select Plan</button>
     </div>
+    
+    <div class="tier-card active">
+      <div class="tier-badge">CURRENT</div>
+      <div class="tier-name">Pro</div>
+      <div class="tier-price">$99<span class="mo">/mo</span></div>
+      <ul class="tier-features">
+        <li><span class="tick">✓</span> 100k API calls</li>
+        <li><span class="tick">✓</span> Priority Support</li>
+        <li><span class="tick">✓</span> Custom Models</li>
+      </ul>
+      <button class="tier-btn active" disabled>Current Plan</button>
+    </div>
+    
+    <div class="tier-card">
+      <div class="tier-name" style="color: var(--accent-purple);">Enterprise</div>
+      <div class="tier-price">Custom</div>
+      <ul class="tier-features">
+        <li><span class="tick">✓</span> Unlimited API calls</li>
+        <li><span class="tick">✓</span> 24/7 Dedicated Support</li>
+      </ul>
+      <button class="tier-btn" onclick="selectSubTier('Enterprise')">Contact Sales</button>
+    </div>
+  </div>
+  
+  <div class="billing-section-title">Billing History</div>
+  <div class="history-table-wrap">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="billing-history-rows">
+        <tr>
+          <td>2023-10-01</td>
+          <td>Pro Plan - October</td>
+          <td>$99.00</td>
+          <td><span class="badge badge-paid">Paid</span></td>
+        </tr>
+        <tr>
+          <td>2023-09-01</td>
+          <td>Pro Plan - September</td>
+          <td>$99.00</td>
+          <td><span class="badge badge-paid">Paid</span></td>
+        </tr>
+        <tr>
+          <td>2023-08-15</td>
+          <td>Compute Overage (Compute Instance A)</td>
+          <td>$43.50</td>
+          <td><span class="badge badge-paid">Paid</span></td>
+        </tr>
+        <tr>
+          <td>2023-08-01</td>
+          <td>Pro Plan - August</td>
+          <td>$99.00</td>
+          <td><span class="badge badge-processed">Processed</span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>`;
 
 var VIEW_SETTINGS = `
-<div class="settings-view">
-  <h2>System Configuration</h2>
+<div class="settings-view" style="padding: 24px;">
+  <div class="settings-header" style="margin-bottom: 24px;">
+    <h2>System Settings</h2>
+    <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Configure your global workspace parameters and security protocols.</p>
+  </div>
   
-  <div class="settings-section">
-    <div class="settings-section-title">Developer User Profile</div>
-    <div class="setting-row">
-      <div>
-        <label>Operator Name</label>
-        <div class="hint" id="settings-profile-name">John Doe</div>
-      </div>
-      <button class="topup-btn" onclick="editProfileField('name')">Edit</button>
+  <div class="settings-card" style="margin-bottom: 24px;">
+    <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <h3 style="margin:0; font-size:16px; font-weight:700;">API Management</h3>
+      <button class="project-action-btn" onclick="generateNewApiKey()" style="padding: 8px 14px; font-size:12px;">+ Generate New Key</button>
     </div>
-    <div class="setting-row">
-      <div>
-        <label>Corporate Email</label>
-        <div class="hint" id="settings-profile-email">john@company.com</div>
-      </div>
-      <button class="topup-btn" onclick="editProfileField('email')">Edit</button>
-    </div>
-    <div class="setting-row">
-      <div>
-        <label>Startup Entity</label>
-        <div class="hint" id="settings-profile-company">Acme Corp</div>
-      </div>
-      <button class="topup-btn" onclick="editProfileField('company')">Edit</button>
+    
+    <div class="api-keys-list" id="settings-api-keys-container" style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Generated Dynamically -->
     </div>
   </div>
   
-  <div class="settings-section">
-    <div class="settings-section-title">Hardware Secure Bridge</div>
-    <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:12px;">
-      <div>
-        <label>Secure GPU Tunnel URL</label>
-        <div class="hint" style="margin-bottom:4px">Enter your Pinggy, localhost.run, or cloudflared link to connect the frontend to your local RTX 4060 Ti API.</div>
+  <div class="settings-two-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom: 24px;">
+    <div class="settings-card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-purple);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <h3 style="margin:0; font-size:16px; font-weight:700;">Security Core</h3>
       </div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="settings-backend-url" placeholder="http://localhost:8000" style="flex:1;padding:10px 14px;border:1px solid var(--border-glass);border-radius:10px;font-size:13px;background:rgba(0,0,0,0.15);color:var(--text-primary);" />
-        <button class="btn-primary" style="padding:10px 18px;width:auto;font-size:13px;" onclick="saveBackendUrl()">Connect</button>
+      
+      <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; padding-bottom:12px; border-bottom: 1px solid var(--border-glass);">
+        <div>
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Two-Factor Authentication</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Require 2FA for all team members.</div>
+        </div>
+        <label class="switch-toggle">
+          <input type="checkbox" id="settings-2fa-toggle" onchange="toggle2FASetting(this.checked)" />
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      
+      <div class="settings-control-block" style="margin-bottom: 16px;">
+        <label style="font-size:13px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Session Timeout</label>
+        <select class="premium-modal-input" id="settings-session-timeout" onchange="saveSessionTimeoutSetting(this.value)" style="margin: 0;">
+          <option value="1">1 Hour (Default)</option>
+          <option value="4">4 Hours</option>
+          <option value="24">24 Hours</option>
+        </select>
+      </div>
+
+      <div class="settings-control-block">
+        <label style="font-size:13px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Google Gemini API Key</label>
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Enter your key to enable the cloud Gemini Onboarding Chat.</div>
+        <input type="password" id="settings-gemini-api-key" class="premium-modal-input" placeholder="AIzaSy..." onchange="saveGeminiApiKeySetting(this.value)" style="width: 100%; box-sizing: border-box; margin: 0;" />
+      </div>
+    </div>
+    
+    <div class="settings-card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-purple);"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <h3 style="margin:0; font-size:16px; font-weight:700;">Backend API Connection</h3>
+      </div>
+      
+      <div style="font-size:12.5px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.4;">
+        Expose your backend to Vercel or GitHub Pages. For remote work (e.g. at school), start the remote tunnel and enter the generated public HTTPS URL here.
+      </div>
+      
+      <div class="settings-control-block" style="margin-bottom: 16px;">
+        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Backend Base URL</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="settings-backend-url" class="premium-modal-input" placeholder="http://localhost:8000" style="flex:1; margin:0; font-size:13px;" />
+          <button class="project-action-btn" onclick="saveBackendUrl()" style="padding: 10px 14px; font-size:12.5px; background:var(--accent-purple) !important; color:#fff !important; border-color:var(--accent-purple) !important; font-weight:600; white-space:nowrap;">Save &amp; Connect</button>
+        </div>
+      </div>
+      
+      <div style="display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--text-secondary); padding-top: 12px; border-top:1px solid var(--border-glass);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-weight:600;">Status:</span>
+          <span id="settings-connection-status" class="connection-status-pill disconnected">Disconnected</span>
+        </div>
+        <button class="project-action-btn" onclick="testBackendConnection()" style="padding: 6px 10px; font-size:11px; background:transparent; border-color:var(--border-glass); cursor:pointer;">Check Link ⚡</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="settings-card" style="margin-bottom: 24px;">
+    <h3 style="margin:0 0 16px; font-size:16px; font-weight:700;">Workspace Preferences</h3>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding-bottom:12px; border-bottom: 1px solid var(--border-glass);">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Default AI Onboarding Engine</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Select which AI backend drives your model design interviews.</div>
+      </div>
+      <select class="premium-modal-input" id="settings-default-engine" onchange="saveDefaultEngineSetting(this.value)" style="width: 180px; margin: 0; padding: 6px 12px;">
+        <option value="gemini">Google Gemini API</option>
+        <option value="gpu">Local GPU (Ollama)</option>
+      </select>
+    </div>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding-bottom:12px; border-bottom: 1px solid var(--border-glass);">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Auto-scale Compute</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Dynamically allocate resources during peak loads.</div>
+      </div>
+      <label class="switch-toggle">
+        <input type="checkbox" id="settings-autoscale-toggle" onchange="togglePrefSetting('autoscale', this.checked)" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding-bottom:12px; border-bottom: 1px solid var(--border-glass);">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Verbose Logging</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Capture all trace events (increases storage usage).</div>
+      </div>
+      <label class="switch-toggle">
+        <input type="checkbox" id="settings-logging-toggle" onchange="togglePrefSetting('logging', this.checked)" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Experimental Features</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Enable beta UI components and alpha APIs.</div>
+      </div>
+      <label class="switch-toggle">
+        <input type="checkbox" id="settings-experimental-toggle" onchange="togglePrefSetting('experimental', this.checked)" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+  </div>
+  
+  <div class="settings-card danger" style="border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.02) !important;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+      <span style="color: #fca5a5; font-size:16px;">⚠️</span>
+      <h3 style="margin:0; font-size:16px; font-weight:700; color:#fca5a5;">Danger Zone</h3>
+    </div>
+    <div style="font-size:13px; color: #9ca3af; margin-bottom: 16px;">Irreversible actions that will permanently affect your data.</div>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding-bottom:12px; border-bottom: 1px solid rgba(239, 68, 68, 0.1);">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Delete All Workspaces</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Remove all compute instances and local data.</div>
+      </div>
+      <button class="project-action-btn delete" onclick="settingsDeleteAllWorkspaces()" style="padding: 8px 16px; font-size:12px; font-weight:600;">Delete Data</button>
+    </div>
+    
+    <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);">Deactivate Account</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Permanently close this account and purge billing.</div>
+      </div>
+      <button class="project-action-btn delete" onclick="settingsDeactivateAccount()" style="padding: 8px 16px; font-size:12px; font-weight:600; background:#f87171 !important; color:#080c14 !important; border-color:#f87171 !important;">Deactivate</button>
+    </div>
+  </div>
+</div>`;
+
+var VIEW_LANDING = `
+<div class="landing-container">
+  <nav class="landing-nav">
+    <div class="landing-logo" onclick="navigate('landing')">
+      <div class="logo-mark">MF</div>
+      <span>ModelForge</span>
+    </div>
+    <div class="landing-nav-btns">
+      <button class="btn-landing-signin" onclick="navigate('auth')">Sign In</button>
+      <button class="btn-landing-cta" onclick="enterConsole()">Launch Console</button>
+    </div>
+  </nav>
+
+  <div class="hero-section">
+    <div class="hero-badge">Sovereign AI Infrastructure</div>
+    <h1>The Custom AI Platform for B2B Teams &amp; Solo Devs</h1>
+    <p class="hero-subtitle">Build, train, and deploy private open-source models locally on your physical hardware or host them on our managed cloud. Zero cloud leakage, 100% data control.</p>
+    
+    <div class="hero-ctas">
+      <button class="btn-landing-primary" onclick="enterConsole()">Get Started Free →</button>
+      <button class="btn-landing-outline" onclick="scrollToFeatures()">Explore Architecture</button>
+    </div>
+  </div>
+
+  <div class="landing-visual-wrap">
+    <div class="terminal-simulator">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span></span><span></span><span></span></div>
+        <div class="terminal-title">modelforge-qlora-engine ~ rtx-4060ti-bridge</div>
+        <div class="terminal-badge">LIVE TELEMETRY</div>
+      </div>
+      <div class="terminal-content" id="terminal-ticker-box">
+        <div class="t-line"><span class="t-green">[SYSTEM]</span> Initializing physical hardware bridge on port 8000...</div>
+        <div class="t-line"><span class="t-green">[SYSTEM]</span> Local RTX 4060 Ti active (16GB VRAM, PCIe Gen 4)</div>
+        <div class="t-line"><span class="t-purple">[QLORA]</span>  Pre-loading foundation weights: Qwen-7B-Instruct (4-bit quantized)</div>
+        <div class="t-line"><span class="t-purple">[QLORA]</span>  Active adapter: none (listening for dataset trigger)</div>
+        <div class="t-line"><span class="t-blue">[CLIENT]</span> Connected to Cloud Ledger Database (Supabase Sync active)</div>
+        <div class="t-line t-pulse-cursor"><span class="t-blue">[SYSTEM]</span> Ready to build... _</div>
       </div>
     </div>
   </div>
 
-  <div class="settings-section">
-    <div class="settings-section-title">Cloud Database Connection (Supabase)</div>
-    <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:12px;">
-      <div>
-        <label>Supabase Project URL</label>
-        <div class="hint" style="margin-bottom:6px">Provide your Supabase URL (e.g., https://xyz.supabase.co) to securely save configurations, chat transcripts, and custom models to the cloud.</div>
+  <div class="features-section" id="landing-features">
+    <h3>Engineered for Independence</h3>
+    <p class="section-subtitle">ModelForge combines high-performance local AI engineering with professional B2B sync protocols.</p>
+    
+    <div class="landing-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h4>Local-First Hardware</h4>
+        <p>Run fine-tuning loops directly on your GPU. Avoid high cloud provider markups and maintain absolute data privacy.</p>
       </div>
-      <input type="text" id="settings-supabase-url" placeholder="https://your-project.supabase.co" style="padding:10px 14px;border:1px solid var(--border-glass);border-radius:10px;font-size:13px;background:rgba(0,0,0,0.15);color:var(--text-primary);" />
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h4>Zero-Data Escape</h4>
+        <p>Your custom adapters, datasets, and transcripts stay inside your local boundary. Deploy securely using clean Docker containers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h4>SaaS Cloud Ledger</h4>
+        <p>Integrate your Supabase or Firebase tables in one click to sync logs, user keys, and projects securely to the cloud.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="landing-footer">
+    <p>© 2026 ModelForge AI Technologies. Distributed under Sovereign Open Source.</p>
+  </footer>
+</div>`;
+
+var VIEW_AUTH = `
+<div class="auth-container">
+  <div class="auth-logo" onclick="navigate('landing')">
+    <div class="logo-mark">MF</div>
+    <h2>ModelForge</h2>
+  </div>
+  
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tab-login" onclick="toggleAuthTab('login')">Log In</button>
+      <button class="auth-tab-btn" id="tab-signup" onclick="toggleAuthTab('signup')">Sign Up</button>
+    </div>
+    
+    <div class="auth-form-box">
+      <h3 id="auth-title">Welcome Back</h3>
+      <p class="auth-subtitle" id="auth-subtitle">Enter your details to access the local AI console.</p>
       
-      <div>
-        <label>Supabase Anonymous Public Key</label>
-        <div class="hint" style="margin-bottom:6px">Anonymous Public API key found in API Settings.</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%">
-        <input type="password" id="settings-supabase-key" placeholder="eyJhbGciOi..." style="padding:10px 14px;border:1px solid var(--border-glass);border-radius:10px;font-size:13px;background:rgba(0,0,0,0.15);color:var(--text-primary);width:100%" />
-        <button class="btn-primary" style="padding:12px;width:100%;font-size:13.5px;margin-top:4px" onclick="saveSupabaseSettings()">Sync Cloud Database</button>
-      </div>
+      <form onsubmit="handleAuthSubmit(event)" id="auth-form">
+        <div class="auth-input-group">
+          <label for="auth-email">Operator Email</label>
+          <input type="email" id="auth-email" placeholder="developer@company.com" required />
+        </div>
+        <div class="auth-input-group">
+          <label for="auth-password">Session Passcode</label>
+          <input type="password" id="auth-password" placeholder="••••••••" required />
+        </div>
+        
+        <div class="auth-extra-row" id="auth-extra-row">
+          <label class="remember-me">
+            <input type="checkbox" id="auth-remember" checked />
+            Keep session active
+          </label>
+        </div>
+        
+        <button type="submit" class="btn-auth-primary" id="auth-submit-btn">Enter Console</button>
+      </form>
     </div>
   </div>
   
-  <div class="settings-section">
-    <div class="settings-section-title">System Preferences</div>
-    <div class="setting-row">
-      <div>
-        <label>Email alerts upon complete</label>
-        <div class="hint">Notify me immediately when fine-tuning finishes</div>
-      </div>
-      <button class="toggle on" id="t-notif" onclick="toggleSetting('notif')"></button>
-    </div>
-    <div class="setting-row">
-      <div>
-        <label>Weekly developer usage digests</label>
-        <div class="hint">Receive automated performance logs</div>
-      </div>
-      <button class="toggle on" id="t-reports" onclick="toggleSetting('reports')"></button>
-    </div>
-    <div class="setting-row">
-      <div>
-        <label>White Theme (Light Mode)</label>
-        <div class="hint">Toggle between white background light mode and cyber dark mode</div>
-      </div>
-      <button class="toggle on" id="t-lighttheme" onclick="toggleLightTheme()"></button>
-    </div>
-  </div>
-  
-  <div class="settings-section" style="border-color:rgba(239,68,68,0.25)">
-    <div class="settings-section-title" style="color:var(--accent-red);background:rgba(239,68,68,0.03)">Danger Zone</div>
-    <div class="setting-row">
-      <div>
-        <label style="color:#f87171">Reset Local Workspace State</label>
-        <div class="hint">Permanently delete configurations and local browser memory</div>
-      </div>
-      <button class="topup-btn" style="color:#f87171;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05)" onclick="resetWorkspaceState()">Reset Workspace</button>
-    </div>
-  </div>
+  <p class="auth-footer-text">Protected by local bridge protocols. Access password is required if public host.</p>
 </div>`;
