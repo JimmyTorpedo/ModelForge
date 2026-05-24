@@ -488,9 +488,15 @@ var VIEW_BILLING = `
 
 var VIEW_SETTINGS = `
 <div class="settings-view" style="padding: 24px;">
-  <div class="settings-header" style="margin-bottom: 24px;">
-    <h2>System Settings</h2>
-    <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Configure your global workspace parameters and security protocols.</p>
+  <div class="settings-header" style="margin-bottom: 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div>
+      <h2>System Settings</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Configure your global workspace parameters and security protocols.</p>
+    </div>
+    <button class="project-action-btn delete" onclick="logOutSession()" style="padding: 10px 20px; font-size:13px; font-weight:600; background:rgba(239,68,68,0.08) !important; color:#fca5a5 !important; border-color:rgba(248,113,113,0.2) !important; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
   </div>
   
   <div class="settings-card" style="margin-bottom: 24px;">
