@@ -528,6 +528,16 @@ function deleteWorkspace(id) {
     return;
   }
 
+  // Trigger physical disk deletion of models in this workspace on local computer
+  var modelsToDelete = customModels.filter(function(m) { return m.workspace_id === id; });
+  modelsToDelete.forEach(function(m) {
+    fetch(getBaseUrl() + "/delete_model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tag: m.tag })
+    }).catch(function(e) { console.warn("Failed to delete backend weights for tag " + m.tag, e); });
+  });
+
   customModels = customModels.filter(function(m) {
     if (m.workspace_id === id) {
       if (supabaseClient) {
@@ -1100,6 +1110,8 @@ function navigate(view) {
     if (view === 'settings') {
       renderApiKeysList();
       populateSettingsControls();
+    } else if (view === 'apigateway') {
+      populateApiModelSelector();
     }
 
     // Workspaces specific hooks
@@ -2301,6 +2313,7 @@ function previewTrainingData() {
 // ─── Navigation Sidebar Builder nav items ──────────────────────────────────────
 var NAV_ITEMS = [
   ['dashboard', 'Workspaces Hub', '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'],
+  ['apigateway', 'API Integration', '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'],
   ['billing',   'Ledger Billing', '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
   ['settings',  'System Settings', '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93a10 10 0 0 0 14.14 14.14"/>']
 ];
@@ -2328,7 +2341,8 @@ function buildApp() {
     ['training',   VIEW_TRAINING],
     ['deployment', VIEW_DEPLOYMENT],
     ['billing',    VIEW_BILLING],
-    ['settings',   VIEW_SETTINGS]
+    ['settings',   VIEW_SETTINGS],
+    ['apigateway', VIEW_APIGATEWAY]
   ];
 
   var viewsHtml = viewDefs.map(function(vd) {
@@ -2453,7 +2467,7 @@ function buildApp() {
     var hashView = window.location.hash.substring(1);
     
     if (sessionActive) {
-      var validViews = ['dashboard', 'builder', 'mymodels', 'proposal', 'training', 'modeltest', 'settings', 'billing'];
+      var validViews = ['dashboard', 'builder', 'mymodels', 'proposal', 'training', 'modeltest', 'settings', 'billing', 'apigateway'];
       if (hashView && validViews.includes(hashView)) {
         navigate(hashView);
         if (chosenUsecase) {
@@ -3243,15 +3257,42 @@ async function updateTopBarTelemetryStatus() {
       btn.style.setProperty('color', '#10b981', 'important');
       btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))', 'important');
       btn.title = "Telemetry Bridge: Online (" + latency + "ms nominal)";
+      hideGlobalOfflineBanner();
+      
+      var tbBadge = document.getElementById('testbench-tunnel-badge');
+      if (tbBadge) {
+        tbBadge.style.background = 'rgba(16, 185, 129, 0.1)';
+        tbBadge.style.color = '#10b981';
+        tbBadge.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+        tbBadge.innerHTML = '<span style="width:6px; height:6px; background:#10b981; border-radius:50%; display:inline-block; animation:pulse 1.5s infinite"></span> GPU Tunnel Active';
+      }
     } else {
       btn.style.setProperty('color', '#ef4444', 'important');
       btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
       btn.title = "Telemetry Bridge: Offline (Backend Server Error " + response.status + ")";
+      showGlobalOfflineBanner();
+      
+      var tbBadge = document.getElementById('testbench-tunnel-badge');
+      if (tbBadge) {
+        tbBadge.style.background = 'rgba(239, 68, 68, 0.1)';
+        tbBadge.style.color = '#ef4444';
+        tbBadge.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+        tbBadge.innerHTML = '<span style="width:6px; height:6px; background:#ef4444; border-radius:50%; display:inline-block;"></span> GPU Tunnel Offline';
+      }
     }
   } catch (e) {
     btn.style.setProperty('color', '#ef4444', 'important');
     btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
     btn.title = "Telemetry Bridge: Offline (Unreachable)";
+    showGlobalOfflineBanner();
+    
+    var tbBadge = document.getElementById('testbench-tunnel-badge');
+    if (tbBadge) {
+      tbBadge.style.background = 'rgba(239, 68, 68, 0.1)';
+      tbBadge.style.color = '#ef4444';
+      tbBadge.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+      tbBadge.innerHTML = '<span style="width:6px; height:6px; background:#ef4444; border-radius:50%; display:inline-block;"></span> GPU Tunnel Offline';
+    }
   }
 }
 
@@ -3321,6 +3362,222 @@ async function checkComputeTelemetry() {
       "4. In System Settings, verify that your base API URL matches your secure custom domain.\n\n" +
       "Current Backend Base URL: " + baseUrl
     );
+  }
+}
+
+// ─── API Integration Gateway Functions ──────────────────────────────────────────
+var activeSnippetTab = 'widget';
+
+function populateApiModelSelector() {
+  var selector = document.getElementById('api-model-selector');
+  if (!selector) return;
+  
+  selector.innerHTML = '';
+  if (customModels.length === 0) {
+    selector.innerHTML = '<option value="">No Custom Models</option>';
+    return;
+  }
+  
+  customModels.forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m.tag;
+    opt.textContent = m.name + ' (' + m.params + ')';
+    selector.appendChild(opt);
+  });
+  
+  updateApiSnippets(selector.value);
+}
+
+function generateGatewayApiKey() {
+  var chars = '0123456789abcdef';
+  var key = 'mf_live_';
+  for (var i = 0; i < 24; i++) {
+    key += chars[Math.floor(Math.random() * 16)];
+  }
+  
+  var keyText = document.getElementById('gateway-api-key-text');
+  if (keyText) keyText.textContent = key;
+  updateApiSnippets(document.getElementById('api-model-selector')?.value || 'modelforge-custom');
+  alert("New secure API key generated successfully!");
+}
+
+function copyGatewayApiKey() {
+  var text = document.getElementById('gateway-api-key-text')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(function() {
+    alert("API Key copied to clipboard!");
+  });
+}
+
+function toggleSnippetTab(tab) {
+  activeSnippetTab = tab;
+  document.querySelectorAll('.apigateway-view .auth-tab-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.id === 'tab-snippet-' + tab);
+  });
+  updateApiSnippets(document.getElementById('api-model-selector')?.value || 'modelforge-custom');
+}
+
+function updateApiSnippets(tag) {
+  var pre = document.getElementById('gateway-snippet-code');
+  if (!pre) return;
+  
+  var key = document.getElementById('gateway-api-key-text')?.textContent || 'mf_live_42a8b9f1d02caefb109c12';
+  var baseUrl = getBaseUrl();
+  var widgetUrl = window.location.origin + '/copilot-widget.js';
+  
+  var code = '';
+  if (activeSnippetTab === 'widget') {
+    code = '<!-- ModelForge Copilot AI Chatbot Widget (Embed in website body) -->\n' +
+           '<script \n' +
+           '  src="' + widgetUrl + '" \n' +
+           '  data-model-tag="' + tag + '" \n' +
+           '  data-api-key="' + key + '" \n' +
+           '  data-api-url="' + baseUrl + '">\n' +
+           '</script>';
+  } else if (activeSnippetTab === 'curl') {
+    code = 'curl -X POST "' + baseUrl + '/chat/direct" \\\n' +
+           '  -H "Content-Type: application/json" \\\n' +
+           '  -H "Authorization: Bearer ' + key + '" \\\n' +
+           '  -d \'{\n' +
+           '    "message": "Hello! What is your pricing?",\n' +
+           '    "model_tag": "' + tag + '"\n' +
+           '  }\'';
+  } else if (activeSnippetTab === 'python') {
+    code = 'import requests\n\n' +
+           'url = "' + baseUrl + '/chat/direct"\n' +
+           'headers = {\n' +
+           '    "Content-Type": "application/json",\n' +
+           '    "Authorization": "Bearer ' + key + '"\n' +
+           '}\n' +
+           'payload = {\n' +
+           '    "message": "Hello!",\n' +
+           '    "model_tag": "' + tag + '"\n' +
+           '}\n\n' +
+           'response = requests.post(url, json=payload, headers=headers)\n' +
+           'print(response.json()["response"])';
+  } else if (activeSnippetTab === 'node') {
+    code = 'const fetch = require(\'node-fetch\');\n\n' +
+           'const url = \'' + baseUrl + '/chat/direct\';\n' +
+           'const payload = {\n' +
+           '  message: \'Hello!\',\n' +
+           '  model_tag: \'' + tag + '\'\n' +
+           '};\n\n' +
+           'fetch(url, {\n' +
+           '  method: \'POST\',\n' +
+           '  headers: {\n' +
+           '    \'Content-Type\': \'application/json\',\n' +
+           '    \'Authorization\': \'Bearer ' + key + '\'\n' +
+           '  },\n' +
+           '  body: JSON.stringify(payload)\n' +
+           '})\n' +
+           '.then(res => res.json())\n' +
+           '.then(json => console.log(json.response))\n' +
+           '.catch(err => console.error(err));';
+  }
+  
+  pre.textContent = code;
+}
+
+function copyGatewaySnippet() {
+  var pre = document.getElementById('gateway-snippet-code');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(function() {
+    alert("Integration code snippet copied to clipboard!");
+  });
+}
+
+function sendGatewayTestMessage() {
+  var input = document.getElementById('gateway-chat-input');
+  if (!input || !input.value.trim()) return;
+  
+  var text = input.value.trim();
+  input.value = '';
+  
+  var chatMessages = document.getElementById('gateway-chat-messages');
+  if (!chatMessages) return;
+  
+  // 1. Append user message
+  var userDiv = document.createElement('div');
+  userDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:var(--accent-purple); padding:10px 14px; border-radius:8px 8px 0 8px; align-self:flex-end; color:#fff; margin-top:8px;';
+  userDiv.innerHTML = '<strong>You:</strong><span>' + esc(text) + '</span>';
+  chatMessages.appendChild(userDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+  // 2. Append typing bubble
+  var typingDiv = document.createElement('div');
+  typingDiv.id = 'gateway-typing';
+  typingDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; margin-top:8px;';
+  typingDiv.innerHTML = '<strong>Copilot Agent:</strong><span style="color:var(--text-secondary); animation:pulse 1s infinite">GPU processing completion...</span>';
+  chatMessages.appendChild(typingDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+  // 3. Make direct backend call
+  var tag = document.getElementById('api-model-selector')?.value || 'modelforge-custom';
+  var baseUrl = getBaseUrl();
+  
+  fetch(baseUrl + '/chat/direct', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: text,
+      model_tag: tag
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error("GPU Server Offline");
+    return res.json();
+  })
+  .then(function(data) {
+    var typing = document.getElementById('gateway-typing');
+    if (typing) typing.remove();
+    
+    var aiDiv = document.createElement('div');
+    aiDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; margin-top:8px;';
+    aiDiv.innerHTML = '<strong>Copilot Agent:</strong><span>' + esc(data.response || 'No response') + '</span>';
+    chatMessages.appendChild(aiDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  })
+  .catch(function(err) {
+    var typing = document.getElementById('gateway-typing');
+    if (typing) typing.remove();
+    
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; color:#fca5a5; margin-top:8px;';
+    errDiv.innerHTML = '<strong>System Error:</strong><span>Could not reach your home GPU server. Please ensure Start_Remote_Server.bat is running and showing green.</span>';
+    chatMessages.appendChild(errDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  });
+}
+
+function showGlobalOfflineBanner() {
+  var banner = document.getElementById('global-offline-banner');
+  if (banner) {
+    banner.classList.remove('hidden');
+    return;
+  }
+  
+  var mainContainer = document.querySelector('.main-container');
+  if (!mainContainer) return;
+  
+  var bannerEl = document.createElement('div');
+  bannerEl.id = 'global-offline-banner';
+  bannerEl.className = 'offline-warning-strip';
+  bannerEl.innerHTML = 
+    '<div class="offline-warning-content">' +
+      '<span class="offline-warning-dot"></span>' +
+      '<span><strong>Compute Server Offline</strong> — Model training, local deployments, and API widgets are currently disabled. Start your server to resume.</span>' +
+    '</div>';
+  
+  var header = document.getElementById('global-top-bar');
+  if (header) {
+    header.insertAdjacentElement('afterend', bannerEl);
+  }
+}
+
+function hideGlobalOfflineBanner() {
+  var banner = document.getElementById('global-offline-banner');
+  if (banner) {
+    banner.classList.add('hidden');
   }
 }
 

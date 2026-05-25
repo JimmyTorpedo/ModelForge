@@ -5320,4 +5320,36 @@ header.top-bar.hidden {
   display: none !important;
 }
 
+/* --- API Integration Offline Banner Styles --- */
+.offline-warning-strip {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+  padding: 8px 16px !important;
+  font-size: 12.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 50 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  animation: fadeIn 0.3s ease !important;
+}
+.offline-warning-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.offline-warning-dot {
+  width: 7px !important;
+  height: 7px !important;
+  background: #ef4444 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 8px #ef4444 !important;
+  animation: pulse 1.5s infinite !important;
+}
+.offline-warning-strip.hidden {
+  display: none !important;
+}
+
 

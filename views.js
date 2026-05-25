@@ -759,3 +759,89 @@ var VIEW_AUTH = `
   
   <p class="auth-footer-text">Protected by local bridge protocols. Access password is required if public host.</p>
 </div>`;
+
+var VIEW_APIGATEWAY = `
+<div class="apigateway-view" style="padding: 24px;">
+  <div class="dash-header" style="padding: 0 0 14px; border-bottom: 1px solid var(--border-glass); margin-bottom: 24px;">
+    <h2>API Integration Gateway</h2>
+    <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Deploy your custom-trained AI models into external business websites and applications using lightweight widgets or direct API calls.</p>
+  </div>
+
+  <div class="settings-two-col" style="display:grid; grid-template-columns: 1.2fr 1fr; gap:24px; align-items:start;">
+    <!-- Left Column: API Controls & Snippets -->
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- API Keys Card -->
+      <div class="settings-card" style="margin:0">
+        <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+          <h3 style="margin:0; font-size:16px; font-weight:700;">API Authentication Keys</h3>
+          <button class="project-action-btn" onclick="generateGatewayApiKey()" style="padding: 8px 14px; font-size:12px;">+ Generate New Key</button>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+          Use these secure API keys to authorize customer support widgets or make direct backend API calls. Keep them strictly confidential.
+        </div>
+        <div class="api-key-chip" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(0,0,0,0.2) !important; border:1px solid var(--border-glass) !important; border-radius:8px;">
+          <code style="color:var(--accent-purple); font-size:13.5px; font-weight:600; letter-spacing:0.05em;" id="gateway-api-key-text">mf_live_42a8b9f1d02caefb109c12</code>
+          <button class="copy-key-btn" onclick="copyGatewayApiKey()" style="font-size:11px; padding:4px 8px; background:transparent; border-color:var(--border-glass);">Copy Key</button>
+        </div>
+      </div>
+
+      <!-- Copilot Integration Card -->
+      <div class="settings-card" style="margin:0">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0; font-size:16px; font-weight:700;">Integration Snippets</h3>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Target Model:</span>
+            <select class="premium-modal-input" id="api-model-selector" onchange="updateApiSnippets(this.value)" style="padding: 6px 12px; font-size:12px; margin:0; width:auto; min-width:150px;">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+        
+        <!-- Snippet Tabs -->
+        <div class="auth-tab-row" style="display:flex; gap:8px; margin-bottom:14px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
+          <button class="auth-tab-btn active" id="tab-snippet-widget" onclick="toggleSnippetTab('widget')" style="font-size:12px; padding:6px 12px;">JS Chatbot Widget</button>
+          <button class="auth-tab-btn" id="tab-snippet-curl" onclick="toggleSnippetTab('curl')" style="font-size:12px; padding:6px 12px;">cURL API</button>
+          <button class="auth-tab-btn" id="tab-snippet-python" onclick="toggleSnippetTab('python')" style="font-size:12px; padding:6px 12px;">Python SDK</button>
+          <button class="auth-tab-btn" id="tab-snippet-node" onclick="toggleSnippetTab('node')" style="font-size:12px; padding:6px 12px;">NodeJS Fetch</button>
+        </div>
+
+        <div style="position:relative;">
+          <pre style="background:rgba(0,0,0,0.3) !important; border:1px solid var(--border-glass) !important; border-radius:8px; padding:14px; margin:0; overflow-x:auto; font-family:'Fira Code', monospace; font-size:12px; color:#c084fc; max-height:220px;" id="gateway-snippet-code">
+<!-- Loading... -->
+          </pre>
+          <button class="copy-snippet-btn" onclick="copyGatewaySnippet()" style="position:absolute; right:10px; top:10px; font-size:10px; padding:4px 8px;">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: API Live Test Bench -->
+    <div class="settings-card" style="margin:0; height:100%; display:flex; flex-direction:column; justify-content:space-between; min-height:480px;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-glass); padding-bottom:14px; margin-bottom:14px;">
+          <h3 style="margin:0; font-size:15px; font-weight:700;">Copilot Test Bench Widget</h3>
+          <span style="font-size:11px; background:rgba(16, 185, 129, 0.1); color:#10b981; padding:3px 8px; border-radius:12px; font-weight:700; border:1px solid rgba(16, 185, 129, 0.2); display:flex; align-items:center; gap:4px;" id="testbench-tunnel-badge">
+            <span style="width:6px; height:6px; background:#10b981; border-radius:50%; display:inline-block; animation:pulse 1.5s infinite"></span>
+            GPU Tunnel Active
+          </span>
+        </div>
+        
+        <!-- Live Chat Simulator area -->
+        <div id="gateway-chat-messages" style="display:flex; flex-direction:column; gap:12px; max-height:300px; min-height:260px; overflow-y:auto; padding:8px 4px; font-size:13px;">
+          <div style="display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start;">
+            <strong>Copilot Agent:</strong>
+            <span>Hello! I am your custom-trained business AI. Query me through this live API Test Bench!</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border-glass); padding-top:14px; margin-top:14px;">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="gateway-chat-input" placeholder="Ask your custom AI a customer support question..." onkeydown="if(event.key==='Enter'){sendGatewayTestMessage()}" class="premium-modal-input" style="margin:0; font-size:13px; padding:10px 14px;" />
+          <button class="send-btn" onclick="sendGatewayTestMessage()" style="padding:10px 16px; background:var(--gradient-tech); border:none; border-radius:8px; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
