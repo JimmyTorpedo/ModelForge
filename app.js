@@ -21,7 +21,25 @@ if (window.location.protocol !== "file:" && window.location.hostname !== "localh
 }
 
 function getBaseUrl() {
-  var url = localStorage.getItem("backendBaseUrl") || "http://localhost:8000";
+  var url = localStorage.getItem("backendBaseUrl");
+  var isRemote = window.location.protocol !== "file:" && 
+                 window.location.hostname !== "localhost" && 
+                 window.location.hostname !== "127.0.0.1" && 
+                 window.location.hostname !== "";
+                 
+  // If running remotely and the saved URL is a local address, clear it to trigger the default remote tunnel fallback
+  if (isRemote && url && (url.includes("localhost") || url.includes("127.0.0.1"))) {
+    url = null;
+    localStorage.removeItem("backendBaseUrl");
+  }
+
+  if (!url) {
+    if (isRemote) {
+      url = "https://scenario-protest-franchise-abroad.trycloudflare.com";
+    } else {
+      url = "http://localhost:8000";
+    }
+  }
   return url.trim().replace(/\/$/, "");
 }
 
@@ -74,8 +92,19 @@ var activeModelTag    = null;
 var supabaseClient    = null;
 
 function initSupabase() {
-  var url = localStorage.getItem("supabaseUrl") || "https://myrlnkpoenobnfyfogsl.supabase.co";
-  var key = localStorage.getItem("supabaseKey") || "sb_publishable_nC_MvMMYu5NmKDIggb8v6A_1rqprPVC";
+  var url = localStorage.getItem("supabaseUrl") || "";
+  var key = localStorage.getItem("supabaseKey") || "";
+  
+  // Proactively purge legacy default credentials if present in browser localStorage
+  if (url === "https://myrlnkpoenobnfyfogsl.supabase.co") {
+    url = "";
+    localStorage.removeItem("supabaseUrl");
+  }
+  if (key === "sb_publishable_nC_MvMMYu5NmKDIggb8v6A_1rqprPVC") {
+    key = "";
+    localStorage.removeItem("supabaseKey");
+  }
+
   if (url && key && window.supabase) {
     try {
       supabaseClient = window.supabase.createClient(url, key);
@@ -2424,8 +2453,19 @@ function buildApp() {
   var settingsUrlEl = document.getElementById('settings-backend-url');
   if (settingsUrlEl) settingsUrlEl.value = getBaseUrl();
   
-  var sbUrl = localStorage.getItem("supabaseUrl") || "https://myrlnkpoenobnfyfogsl.supabase.co";
-  var sbKey = localStorage.getItem("supabaseKey") || "sb_publishable_nC_MvMMYu5NmKDIggb8v6A_1rqprPVC";
+  var sbUrl = localStorage.getItem("supabaseUrl") || "";
+  var sbKey = localStorage.getItem("supabaseKey") || "";
+  
+  // Purge legacy credentials inside buildApp if found in localStorage
+  if (sbUrl === "https://myrlnkpoenobnfyfogsl.supabase.co") {
+    sbUrl = "";
+    localStorage.removeItem("supabaseUrl");
+  }
+  if (sbKey === "sb_publishable_nC_MvMMYu5NmKDIggb8v6A_1rqprPVC") {
+    sbKey = "";
+    localStorage.removeItem("supabaseKey");
+  }
+
   var settingsSbUrl = document.getElementById('settings-supabase-url');
   if (settingsSbUrl) settingsSbUrl.value = sbUrl;
   var settingsSbKey = document.getElementById('settings-supabase-key');
@@ -3016,7 +3056,7 @@ function populateSettingsControls() {
   
   var tBackendUrl = document.getElementById('settings-backend-url');
   if (tBackendUrl) {
-    tBackendUrl.value = (localStorage.getItem('backendBaseUrl') || 'http://localhost:8000');
+    tBackendUrl.value = getBaseUrl();
   }
   
   // Immediately test backend connection in background
