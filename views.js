@@ -20,8 +20,8 @@ var VIEW_BUILDER = `
       </p>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">AI Engine:</span>
       <select class="premium-modal-input" id="builder-engine-selector" onchange="changeBuilderEngine(this.value)" style="padding: 6px 12px; font-size:12px; margin:0; width:auto; min-width:145px;">
+        <option value="free">Free Cloud Engine</option>
         <option value="gemini">Google Gemini API</option>
         <option value="gpu">Private GPU Node</option>
       </select>
@@ -56,9 +56,16 @@ var VIEW_BUILDER = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
 
-        <!-- Gemini Popover Dropdown menu -->
         <div class="gemini-dropdown-popover hidden" id="gemini-engine-popover">
-          <div class="gemini-popover-item active" id="popover-item-gemini" onclick="selectEnginePopover('gemini', 'Gemini Pro', event)">
+          <div class="gemini-popover-item active" id="popover-item-free" onclick="selectEnginePopover('free', 'Free Cloud', event)">
+            <div class="popover-item-check">&#10003;</div>
+            <div class="popover-item-content">
+              <div class="popover-item-title">Free Cloud Engine</div>
+              <div class="popover-item-desc">Zero-cost cloud assistant - no API keys required</div>
+            </div>
+          </div>
+          
+          <div class="gemini-popover-item" id="popover-item-gemini" onclick="selectEnginePopover('gemini', 'Gemini Pro', event)">
             <div class="popover-item-check">&#10003;</div>
             <div class="popover-item-content">
               <div class="popover-item-title">Gemini 1.5 Pro</div>
@@ -385,15 +392,6 @@ var VIEW_MODELTEST = `
 
 var VIEW_BILLING = `
 <div class="billing-view" style="padding: 24px;">
-  <div class="billing-status-banner">
-    <span class="status-dot pulsing"></span>
-    <span class="status-text">SYSTEM STATUS: NOMINAL</span>
-    <span class="divider">|</span>
-    <span class="latency-text">API Latency: 42ms</span>
-    <span class="divider">|</span>
-    <span class="compute-text">Compute: 18%</span>
-  </div>
-  
   <div class="billing-header" style="margin-bottom:24px">
     <h2>Billing Overview</h2>
     <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Manage your subscriptions, usage, and ledger history.</p>
@@ -585,6 +583,7 @@ var VIEW_SETTINGS = `
         <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Select which AI backend drives your model design interviews.</div>
       </div>
       <select class="premium-modal-input" id="settings-default-engine" onchange="saveDefaultEngineSetting(this.value)" style="width: 180px; margin: 0; padding: 6px 12px;">
+        <option value="free">Free Cloud Engine</option>
         <option value="gemini">Google Gemini API</option>
         <option value="gpu">Private GPU Node</option>
       </select>

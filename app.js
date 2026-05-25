@@ -790,8 +790,8 @@ function commitCreateModel() {
   }
   activeModelTag = baseTag + "-" + Math.random().toString(36).substring(2, 6);
 
-  // Initialize draft engine preference based on user default (fall back to gpu)
-  var defaultEngine = localStorage.getItem('default_onboarding_engine') || 'gpu';
+  // Initialize draft engine preference based on user default (fall back to free)
+  var defaultEngine = localStorage.getItem('default_onboarding_engine') || 'free';
   localStorage.setItem('active_engine_' + activeModelTag, defaultEngine);
 
   var newModel = {
@@ -1131,13 +1131,14 @@ function navigate(view) {
         builderHeader.textContent = "Building Model: " + (m ? m.name : "Custom LLM");
       }
       var savedEngine = activeModelTag 
-        ? (localStorage.getItem('active_engine_' + activeModelTag) || localStorage.getItem('default_onboarding_engine') || 'gemini')
-        : (localStorage.getItem('active_engine_global') || localStorage.getItem('default_onboarding_engine') || 'gemini');
+        ? (localStorage.getItem('active_engine_' + activeModelTag) || localStorage.getItem('default_onboarding_engine') || 'free')
+        : (localStorage.getItem('active_engine_global') || localStorage.getItem('default_onboarding_engine') || 'free');
       setTimeout(function() {
         updateChatEngineUI(savedEngine);
       }, 50);
     }
   }
+  updateTopBarTelemetryStatus();
 }
 
 // ─── Model Inventory Renderings ──────────────────────────────────────────────
@@ -1383,10 +1384,61 @@ function callBuilderAI(userText, fileContext) {
   geminiHistory.push({ role: "user", parts: [{ text: fullMessage }] });
 
   var activeEngine = activeModelTag 
-    ? (localStorage.getItem('active_engine_' + activeModelTag) || localStorage.getItem('default_onboarding_engine') || 'gemini')
-    : (localStorage.getItem('active_engine_global') || localStorage.getItem('default_onboarding_engine') || 'gemini');
+    ? (localStorage.getItem('active_engine_' + activeModelTag) || localStorage.getItem('default_onboarding_engine') || 'free')
+    : (localStorage.getItem('active_engine_global') || localStorage.getItem('default_onboarding_engine') || 'free');
 
-  if (activeEngine === 'gemini') {
+  if (activeEngine === 'free') {
+    var pollinationsUrl = "https://text.pollinations.ai/openai";
+    var historyPayload = geminiHistory.map(function(h) {
+      return {
+        role: h.role === 'model' ? 'assistant' : h.role,
+        content: h.parts[0].text
+      };
+    });
+    var messagesToSend = [{ role: 'system', content: SYSTEM_PROMPT }].concat(historyPayload);
+    
+    var payload = {
+      messages: messagesToSend
+    };
+
+    fetch(pollinationsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Pollinations API call failed.');
+      return r.json();
+    })
+    .then(function(data) {
+      messages = messages.filter(function(m) { return !m.typing; });
+      var aiText = "";
+      try {
+        aiText = data.choices[0].message.content;
+      } catch (e) {
+        aiText = "Sorry, I received an invalid response from the free AI engine.";
+      }
+      aiText = aiText || "No response generated.";
+      geminiHistory.push({ role: "model", parts: [{ text: aiText }] });
+      
+      var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need/i.test(aiText);
+      messages.push({ role: 'ai', text: aiText, showBtn: signalsReady });
+      renderMessages();
+      saveOnboardingChatLocal();
+      if (supabaseClient) {
+        var chatId = activeModelTag ? ('onboarding_' + activeModelTag) : 'onboarding';
+        saveChatToCloud(chatId, 'onboarding', messages, activeModelTag);
+      }
+    })
+    .catch(function(err) {
+      console.warn("Pollinations AI failed, falling back to local fallback:", err);
+      tryLocalOrJsOnboarding(sendBtn);
+    })
+    .finally(function() {
+      isFetching = false;
+      if (sendBtn) sendBtn.disabled = false;
+    });
+  } else if (activeEngine === 'gemini') {
     var userKey = localStorage.getItem('custom_gemini_api_key') || '';
     if (!userKey) {
       setTimeout(function() {
@@ -2309,7 +2361,7 @@ function buildApp() {
               '<button class="top-bar-icon-btn" onclick="navigate(\'settings\')" title="System Settings">' +
                 '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' +
               '</button>' +
-              '<button class="top-bar-icon-btn" onclick="alert(\'All local GPU systems nominal. Bridge latency 42ms.\')" title="Telemetry Bridge">' +
+              '<button class="top-bar-icon-btn" id="top-bar-telemetry-btn" onclick="checkComputeTelemetry()" title="Telemetry Bridge: Offline (Checking...)">' +
                 '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><circle cx="12" cy="20" r="2"/></svg>' +
               '</button>' +
             '</div>' +
@@ -2946,7 +2998,7 @@ function populateSettingsControls() {
   if (tGeminiKey) tGeminiKey.value = (localStorage.getItem('custom_gemini_api_key') || '');
 
   var tDefaultEngine = document.getElementById('settings-default-engine');
-  if (tDefaultEngine) tDefaultEngine.value = (localStorage.getItem('default_onboarding_engine') || 'gemini');
+  if (tDefaultEngine) tDefaultEngine.value = (localStorage.getItem('default_onboarding_engine') || 'free');
   
   var tBackendUrl = document.getElementById('settings-backend-url');
   if (tBackendUrl) {
@@ -2987,21 +3039,22 @@ function updateChatEngineUI(engine) {
   // Sync the new chat input switcher pill text
   var activePillName = document.getElementById('gemini-pill-active-name');
   if (activePillName) {
-    activePillName.textContent = engine === 'gpu' ? 'Local GPU' : 'Gemini Pro';
+    if (engine === 'gpu') {
+      activePillName.textContent = 'Local GPU';
+    } else if (engine === 'free') {
+      activePillName.textContent = 'Free Cloud';
+    } else {
+      activePillName.textContent = 'Gemini Pro';
+    }
   }
   
   // Sync active classes inside the popover items
   var popoverGemini = document.getElementById('popover-item-gemini');
   var popoverGpu = document.getElementById('popover-item-gpu');
-  if (popoverGemini && popoverGpu) {
-    if (engine === 'gpu') {
-      popoverGemini.classList.remove('active');
-      popoverGpu.classList.add('active');
-    } else {
-      popoverGemini.classList.add('active');
-      popoverGpu.classList.remove('active');
-    }
-  }
+  var popoverFree = document.getElementById('popover-item-free');
+  if (popoverGemini) popoverGemini.classList.toggle('active', engine === 'gemini');
+  if (popoverGpu) popoverGpu.classList.toggle('active', engine === 'gpu');
+  if (popoverFree) popoverFree.classList.toggle('active', engine === 'free');
   
   if (engine === 'gpu') {
     if (statusText) statusText.style.color = 'var(--accent-green)';
@@ -3010,6 +3063,13 @@ function updateChatEngineUI(engine) {
       dot.style.boxShadow = '0 0 8px var(--accent-green)';
     }
     if (nameText) nameText.textContent = 'Local GPU Onboarding Specialist Active';
+  } else if (engine === 'free') {
+    if (statusText) statusText.style.color = 'var(--accent-blue)';
+    if (dot) {
+      dot.style.background = 'var(--accent-blue)';
+      dot.style.boxShadow = '0 0 8px var(--accent-blue)';
+    }
+    if (nameText) nameText.textContent = 'Free Cloud Onboarding Specialist Active';
   } else {
     if (statusText) statusText.style.color = 'var(--accent-purple)';
     if (dot) {
@@ -3158,6 +3218,111 @@ async function testBackendConnection() {
     statusPill.textContent = "Disconnected";
     statusPill.className = "connection-status-pill disconnected";
   }
+  updateTopBarTelemetryStatus();
+}
+
+async function updateTopBarTelemetryStatus() {
+  var btn = document.getElementById('top-bar-telemetry-btn');
+  if (!btn) return;
+  
+  var baseUrl = getBaseUrl();
+  var startTime = Date.now();
+  try {
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 3000); // 3s timeout
+    
+    var response = await fetch(baseUrl + "/health", {
+      method: "GET",
+      signal: controller.signal,
+      headers: { "Accept": "application/json" }
+    });
+    clearTimeout(timeoutId);
+    
+    var latency = Date.now() - startTime;
+    if (response.ok) {
+      btn.style.setProperty('color', '#10b981', 'important');
+      btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))', 'important');
+      btn.title = "Telemetry Bridge: Online (" + latency + "ms nominal)";
+    } else {
+      btn.style.setProperty('color', '#ef4444', 'important');
+      btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
+      btn.title = "Telemetry Bridge: Offline (Backend Server Error " + response.status + ")";
+    }
+  } catch (e) {
+    btn.style.setProperty('color', '#ef4444', 'important');
+    btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
+    btn.title = "Telemetry Bridge: Offline (Unreachable)";
+  }
+}
+
+async function checkComputeTelemetry() {
+  var baseUrl = getBaseUrl();
+  var startTime = Date.now();
+  
+  var btn = document.getElementById('top-bar-telemetry-btn');
+  if (btn) {
+    btn.style.setProperty('color', '#f59e0b', 'important');
+    btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.6))', 'important');
+    btn.title = "Telemetry Bridge: Checking Connection...";
+  }
+
+  try {
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 3000);
+    
+    var response = await fetch(baseUrl + "/health", {
+      method: "GET",
+      signal: controller.signal,
+      headers: { "Accept": "application/json" }
+    });
+    clearTimeout(timeoutId);
+    
+    var latency = Date.now() - startTime;
+    if (response.ok) {
+      if (btn) {
+        btn.style.setProperty('color', '#10b981', 'important');
+        btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))', 'important');
+        btn.title = "Telemetry Bridge: Online (" + latency + "ms nominal)";
+      }
+      alert(
+        "ModelForge Secure Tunnel Connection Details:\n\n" +
+        "● Host Node: Connected\n" +
+        "● Tunnel Path: Secured (Cloudflare/B2B Proprietary)\n" +
+        "● Backend URL: " + baseUrl + "\n" +
+        "● Compute Signal: Green\n" +
+        "● Network Latency: " + latency + "ms (nominal)\n\n" +
+        "All remote workstation operations are synced and fully operational!"
+      );
+    } else {
+      if (btn) {
+        btn.style.setProperty('color', '#ef4444', 'important');
+        btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
+        btn.title = "Telemetry Bridge: Offline (Backend Server Error " + response.status + ")";
+      }
+      showOfflineAlert();
+    }
+  } catch (e) {
+    if (btn) {
+      btn.style.setProperty('color', '#ef4444', 'important');
+      btn.style.setProperty('filter', 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))', 'important');
+      btn.title = "Telemetry Bridge: Offline (Unreachable)";
+    }
+    showOfflineAlert();
+  }
+
+  function showOfflineAlert() {
+    alert(
+      "ModelForge Remote Compute Node: OFFLINE\n\n" +
+      "Your private GPU hardware compute server is not currently reachable from this browser session.\n\n" +
+      "Troubleshooting Steps:\n" +
+      "1. Ensure your remote home computer is powered on.\n" +
+      "2. Run the connection script on that PC: 'Start_Remote_Server.bat'\n" +
+      "3. Verify that the terminal window remains open and shows a green tunnel status.\n" +
+      "4. In System Settings, verify that your base API URL matches your secure custom domain.\n\n" +
+      "Current Backend Base URL: " + baseUrl
+    );
+  }
 }
 
 buildApp();
+updateTopBarTelemetryStatus();

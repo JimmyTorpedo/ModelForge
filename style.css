@@ -63,7 +63,7 @@ html, body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100% !important;
   position: relative;
 }
 
@@ -4058,6 +4058,7 @@ body:not(.light-theme) .auth-container {
   border: 1px solid var(--border-glass) !important;
   border-radius: 12px !important;
   overflow: hidden !important;
+  overflow-x: auto !important; /* Enable responsive swipe-scrolling on tablets/mobile */
 }
 
 .history-table {
@@ -4486,6 +4487,7 @@ body:not(.light-theme) .auth-container {
 }
 
 .light-theme .history-table-wrap {
+  background: #ffffff !important;
   border-color: #eaeaea !important;
   box-shadow: var(--box-shadow-vercel) !important;
 }
@@ -4497,8 +4499,9 @@ body:not(.light-theme) .auth-container {
 }
 
 .light-theme .history-table td {
+  background: #ffffff !important;
   border-bottom-color: #eaeaea !important;
-  color: #000000 !important;
+  color: #111827 !important;
 }
 
 .light-theme .badge-paid {
