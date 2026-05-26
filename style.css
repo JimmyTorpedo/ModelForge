@@ -287,11 +287,16 @@ h1, h2, h3, h4 {
 .view {
   display: none;
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .view.active {
   display: flex;
   flex-direction: column;
+}
+#view-builder, #view-modeltest {
+  overflow: hidden !important;
 }
 
 /* --- CHAT VIEWS (BUILDER & MODEL TEST) --- */
@@ -578,7 +583,7 @@ h1, h2, h3, h4 {
 /* --- MODEL PROPOSAL VIEW --- */
 .proposal-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
   max-width: 720px;
   width: 100%;
@@ -696,7 +701,7 @@ h1, h2, h3, h4 {
 /* --- MODEL TRAINING VIEW --- */
 .training-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
   max-width: 680px;
   width: 100%;
@@ -819,7 +824,7 @@ h1, h2, h3, h4 {
 /* --- DEPLOYMENT TIERS PRICING --- */
 .deploy-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
 }
 .deploy-view h2 {
@@ -973,7 +978,7 @@ h1, h2, h3, h4 {
 /* --- DASHBOARD & MODEL LISTS --- */
 .dashboard-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
   max-width: 960px;
   width: 100%;
@@ -1141,7 +1146,7 @@ h1, h2, h3, h4 {
 /* --- SYSTEM SETTINGS VIEW --- */
 .settings-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
   max-width: 660px;
   width: 100%;
@@ -1228,7 +1233,7 @@ h1, h2, h3, h4 {
 /* --- BILLING VIEW --- */
 .billing-view {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 40px 24px;
   max-width: 720px;
   width: 100%;
@@ -3513,7 +3518,7 @@ body:not(.light-theme) .auth-container {
   display: flex !important;
   flex-direction: column !important;
   flex: 1 !important;
-  height: 100vh !important;
+  height: 100% !important;
   overflow: hidden !important;
   background: var(--bg-primary) !important;
 }
@@ -4769,7 +4774,7 @@ body:not(.light-theme) .auth-container {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: 'Outfit', sans-serif;
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
   padding-bottom: 40px;
 }
