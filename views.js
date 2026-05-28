@@ -692,91 +692,247 @@ var VIEW_LANDING = `
   </div>
 
   <div class="features-section" id="landing-features">
-    <h3>Engineered for Independence</h3>
-    <p class="section-subtitle">ModelForge combines high-performance local AI engineering with professional B2B sync protocols.</p>
+    <div class="features-header">
+      <span class="features-tag">Sovereign Business Intelligence</span>
+      <h3>What Can You Achieve with ModelForge?</h3>
+      <p class="section-subtitle">Train private AI brains on your own files, automate customer support, and run infinite AI tasks with zero cloud fees.</p>
+    </div>
     
-    <div class="landing-grid">
-      <div class="feature-card">
-        <div class="feature-icon-wrapper">
-          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-            <rect x="9" y="9" width="6" height="6"></rect>
-            <line x1="9" y1="1" x2="9" y2="4"></line>
-            <line x1="15" y1="1" x2="15" y2="4"></line>
-            <line x1="9" y1="20" x2="9" y2="23"></line>
-            <line x1="15" y1="20" x2="15" y2="23"></line>
-            <line x1="20" y1="9" x2="23" y2="9"></line>
-            <line x1="20" y1="15" x2="23" y2="15"></line>
-            <line x1="1" y1="9" x2="4" y2="9"></line>
-            <line x1="1" y1="15" x2="4" y2="15"></line>
-          </svg>
+    <div class="features-showcase">
+      <!-- Feature Row 1: Customer Support Chatbot -->
+      <div class="feature-row alternating">
+        <div class="feature-info-col">
+          <div class="feature-tag-pill purple">Automated Support Bot</div>
+          <h4>An AI support agent that answers perfectly, 24/7</h4>
+          <p class="feature-description">
+            Stop relying on generic public AI models that know nothing about your business policies, pricing, or products. ModelForge reads your manuals, support logs, and guides to train a dedicated support copilot. It answers customer questions instantly and perfectly, with 100% brand alignment and zero hallucinations.
+          </p>
+          <div class="feature-benefit-list">
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>24/7 Instant Resolutions</strong>
+                <span>Give your clients immediate, helpful answers at any hour of the day or night.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>Strict Fact Bounding</strong>
+                <span>Our models never make things up—they only speak from the facts in your uploaded files.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>1-Click Website Embed</strong>
+                <span>Copy and paste a simple HTML script to add a beautiful support chat bubble to your website.</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <h4>Local-First Hardware</h4>
-        <p>Run fine-tuning loops directly on your GPU. Avoid high cloud provider markups and maintain absolute data privacy.</p>
-        <div class="card-visual hardware-visual">
-          <div class="visual-header">
-            <span class="visual-title">LOCAL WORKSTATION TELEMETRY</span>
-            <span class="visual-badge active">RTX 4090 ACTIVE</span>
-          </div>
-          <div class="visual-row">
-            <span class="visual-label">VRAM Allocation</span>
-            <span class="visual-value">22.4 GB / 24 GB</span>
-          </div>
-          <div class="visual-bar-wrap">
-            <div class="visual-bar" style="width: 93%;"></div>
-          </div>
-          <div class="visual-row">
-            <span class="visual-label">Core Temp</span>
-            <span class="visual-value" style="color: var(--accent-purple);">68°C</span>
+        <div class="feature-visual-col">
+          <div class="premium-mockup-card chat-widget-mockup">
+            <div class="mockup-header">
+              <div class="mockup-header-left">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">CUSTOMER SUPPORT ASSISTANT</span>
+              </div>
+              <span class="mockup-status active">ONLINE</span>
+            </div>
+            <div class="mockup-body chat-widget-body">
+              <div class="chat-thread-container">
+                <div class="chat-msg client">
+                  <div class="chat-avatar c-logo">U</div>
+                  <div class="chat-bubble">Do you offer a custom SLA for enterprise teams?</div>
+                </div>
+                <div class="chat-msg bot">
+                  <div class="chat-avatar bot-logo">MF</div>
+                  <div class="chat-bubble">
+                    Yes! Based on page 12 of <strong>SLA_Enterprise_Guide.pdf</strong>, we guarantee a 99.9% uptime SLA for dedicated hardware nodes, with 24/7 priority support and direct Slack bridge access.
+                  </div>
+                </div>
+              </div>
+              <div class="chat-mockup-input">
+                <span class="mock-input-text">Ask a question to your custom AI...</span>
+                <button class="mock-send-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrapper">
-          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          </svg>
-        </div>
-        <h4>Zero-Data Escape</h4>
-        <p>Your custom adapters, datasets, and transcripts stay inside your local boundary. Deploy securely using clean Docker containers.</p>
-        <div class="card-visual docker-visual">
-          <div class="visual-header">
-            <span class="visual-title">CONTAINER PROTOCOL</span>
-            <span class="visual-badge secure">SECURE</span>
+
+      <!-- Feature Row 2: Secure Corporate Brain -->
+      <div class="feature-row alternating reverse">
+        <div class="feature-info-col">
+          <div class="feature-tag-pill green">Secure Corporate Brain</div>
+          <h4>Unlock the collective knowledge of all your company files</h4>
+          <p class="feature-description">
+            Tired of searching through messy folders, Google Drive, and employee manuals? ModelForge creates a private, intelligent search engine over your company's entire file library. Employees can instantly ask questions and synthesize complex reports, without any data ever leaving your secure local workstations.
+          </p>
+          <div class="feature-benefit-list">
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>100% Data Sovereignty</strong>
+                <span>Keep all intellectual property, customer logs, and sensitive data safely inside your building.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>Neural Document Indexing</strong>
+                <span>Instantly upload PDFs, spreadsheets, CSVs, and text documents to expand your AI's brain.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>HIPAA & GDPR Compliance</strong>
+                <span>Perfect for healthcare, finance, and legal teams requiring strict data sandboxing.</span>
+              </div>
+            </div>
           </div>
-          <div class="visual-code">
-            <span class="code-line"><span class="code-cmd">docker run</span> -d -p 8000:8000 \</span>
-            <span class="code-line">  -v ./models:/app/models \</span>
-            <span class="code-line">  modelforge:latest</span>
+        </div>
+        <div class="feature-visual-col">
+          <div class="premium-mockup-card model-training-mockup">
+            <div class="mockup-header">
+              <div class="mockup-header-left">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">SECURE INTERNAL DATA GATEWAY</span>
+              </div>
+              <span class="mockup-status learning" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">SANDBOXED</span>
+            </div>
+            <div class="mockup-body">
+              <div class="upload-source-list">
+                <div class="source-item active">
+                  <svg class="source-icon" style="color: var(--accent-green);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <div class="source-meta">
+                    <span class="source-name">Q3_Financial_Projections.xlsx</span>
+                    <span class="source-size">6.8 MB &middot; 42 Sheets</span>
+                  </div>
+                  <span class="source-status-badge" style="background: rgba(16, 185, 129, 0.12); color: #34d399;">INDEXED</span>
+                </div>
+                <div class="source-item active">
+                  <svg class="source-icon" style="color: var(--accent-green);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <div class="source-meta">
+                    <span class="source-name">Internal_Employee_Handbook.pdf</span>
+                    <span class="source-size">14.2 MB &middot; 242 Pages</span>
+                  </div>
+                  <span class="source-status-badge" style="background: rgba(16, 185, 129, 0.12); color: #34d399;">INDEXED</span>
+                </div>
+              </div>
+              <div class="training-progress-section">
+                <div class="progress-info-row">
+                  <span>Neural Ingestion Engine</span>
+                  <span class="progress-percentage" style="color: #34d399;">SECURE ACTIVE</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill animate-progress" style="width: 100%; background: linear-gradient(135deg, #10b981, #3b82f6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); animation: none;"></div>
+                </div>
+                <div class="progress-grid-metrics">
+                  <div class="metric-card-mini">
+                    <span class="metric-label">Access</span>
+                    <span class="metric-val">Private</span>
+                  </div>
+                  <div class="metric-card-mini">
+                    <span class="metric-label">Cloud Leak</span>
+                    <span class="metric-val green">0%</span>
+                  </div>
+                  <div class="metric-card-mini">
+                    <span class="metric-label">Status</span>
+                    <span class="metric-val green">Locked 🔒</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-wrapper">
-          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-            <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
-          </svg>
-        </div>
-        <h4>SaaS Cloud Ledger</h4>
-        <p>Integrate your Supabase or Firebase tables in one click to sync logs, user keys, and projects securely to the cloud.</p>
-        <div class="card-visual cloud-visual">
-          <div class="visual-header">
-            <span class="visual-title">DATABASE SYNCHRONIZATION</span>
-            <span class="visual-badge connected">CONNECTED</span>
+
+      <!-- Feature Row 3: Eradicate Public Cloud Costs -->
+      <div class="feature-row alternating">
+        <div class="feature-info-col">
+          <div class="feature-tag-pill blue">Zero Cloud Costs</div>
+          <h4>Stop paying per prompt. Own your AI weights forever</h4>
+          <p class="feature-description">
+            Public cloud providers charge you for every single message and search, leading to huge, unpredictable bills as your team grows. With ModelForge, your models run locally on your own GPU workstation or on our dedicated flat-rate cloud servers. Run a million prompts for a flat cost of $0/month.
+          </p>
+          <div class="feature-benefit-list">
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>Absolute Cost Defeat</strong>
+                <span>Eliminate monthly cloud API surcharges and save thousands of dollars in SaaS expenses.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>Complete Weight Ownership</strong>
+                <span>Own your custom-trained AI model weights forever with no vendor lock-in or IP restrictions.</span>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <div>
+                <strong>Immediate ROI</strong>
+                <span>Your physical workstation hardware pays for itself in weeks and runs for free forever.</span>
+              </div>
+            </div>
           </div>
-          <div class="visual-sync-row">
-            <div class="sync-db">
-              <span class="db-dot supabase"></span>
-              <span>Supabase</span>
+        </div>
+        <div class="feature-visual-col">
+          <div class="premium-mockup-card cost-savings-mockup">
+            <div class="mockup-header">
+              <div class="mockup-header-left">
+                <span class="mockup-dot red"></span>
+                <span class="mockup-dot yellow"></span>
+                <span class="mockup-dot green"></span>
+                <span class="mockup-title">COMPUTE FINANCIAL LEDGER</span>
+              </div>
+              <span class="mockup-status optimized">OPTIMIZED</span>
             </div>
-            <div class="sync-arrow">
-              <svg width="18" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3l4 4-4 4M21 7H3M7 21l-4-4 4-4M3 17h18"/></svg>
-            </div>
-            <div class="sync-db">
-              <span class="db-dot local"></span>
-              <span>Local Node</span>
+            <div class="mockup-body savings-layout">
+              <div class="cost-row public-cloud">
+                <div class="cost-meta">
+                  <span class="cost-label">OpenAI & AWS Cloud Prompts</span>
+                  <span class="cost-amount red">$14,850/mo</span>
+                </div>
+                <div class="cost-bar-wrap">
+                  <div class="cost-bar red" style="width: 100%;"></div>
+                </div>
+              </div>
+              
+              <div class="cost-row modelforge-local">
+                <div class="cost-meta">
+                  <span class="cost-label">ModelForge Workstation Compute</span>
+                  <span class="cost-amount green">$0.00/mo</span>
+                </div>
+                <div class="cost-bar-wrap">
+                  <div class="cost-bar green glow-bar" style="width: 12%;"></div>
+                </div>
+              </div>
+              
+              <div class="savings-highlights">
+                <div class="savings-circle-metric">
+                  <svg class="circular-chart green" viewBox="0 0 36 36">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <div class="percentage-inside">100%</div>
+                </div>
+                <div class="savings-text-col">
+                  <h5>Sovereign Financial Defeat</h5>
+                  <p>100% reduction in cloud API overhead. Your local physical GPU node runs free forever.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
