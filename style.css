@@ -1551,8 +1551,13 @@ REVOLUTIONARY RESPONSIVE & BREAKPOINT ENGINE
   -webkit-text-fill-color: #ffffff !important;
   box-shadow: none !important;
   font-weight: 800 !important;
-  border-radius: 4px !important;
-  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .light-theme .credits-badge {
@@ -3269,10 +3274,17 @@ select.premium-modal-input option {
 }
 
 .light-theme .hero-badge {
-  background: #eaeaea !important;
-  color: #000000 !important;
-  border: 1px solid #eaeaea !important;
-  font-size: 11px !important;
+  background: rgba(124, 58, 237, 0.06) !important;
+  color: #7c3aed !important;
+  border: 1px solid rgba(124, 58, 237, 0.15) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  padding: 6px 16px !important;
+  border-radius: 20px !important;
+  display: inline-block !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
 }
 
 .light-theme .hero-section h1 {
@@ -4874,7 +4886,7 @@ body:not(.light-theme) .landing-container {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: 80px 20px 40px;
+  padding: 48px 20px 40px;
   max-width: 800px;
   margin: 0 auto;
   display: flex;
