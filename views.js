@@ -697,19 +697,89 @@ var VIEW_LANDING = `
     
     <div class="landing-grid">
       <div class="feature-card">
-        <div class="feature-icon">⚡</div>
+        <div class="feature-icon-wrapper">
+          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+            <line x1="20" y1="9" x2="23" y2="9"></line>
+            <line x1="20" y1="15" x2="23" y2="15"></line>
+            <line x1="1" y1="9" x2="4" y2="9"></line>
+            <line x1="1" y1="15" x2="4" y2="15"></line>
+          </svg>
+        </div>
         <h4>Local-First Hardware</h4>
         <p>Run fine-tuning loops directly on your GPU. Avoid high cloud provider markups and maintain absolute data privacy.</p>
+        <div class="card-visual hardware-visual">
+          <div class="visual-header">
+            <span class="visual-title">LOCAL WORKSTATION TELEMETRY</span>
+            <span class="visual-badge active">RTX 4090 ACTIVE</span>
+          </div>
+          <div class="visual-row">
+            <span class="visual-label">VRAM Allocation</span>
+            <span class="visual-value">22.4 GB / 24 GB</span>
+          </div>
+          <div class="visual-bar-wrap">
+            <div class="visual-bar" style="width: 93%;"></div>
+          </div>
+          <div class="visual-row">
+            <span class="visual-label">Core Temp</span>
+            <span class="visual-value" style="color: var(--accent-purple);">68°C</span>
+          </div>
+        </div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🛡️</div>
+        <div class="feature-icon-wrapper">
+          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
         <h4>Zero-Data Escape</h4>
         <p>Your custom adapters, datasets, and transcripts stay inside your local boundary. Deploy securely using clean Docker containers.</p>
+        <div class="card-visual docker-visual">
+          <div class="visual-header">
+            <span class="visual-title">CONTAINER PROTOCOL</span>
+            <span class="visual-badge secure">SECURE</span>
+          </div>
+          <div class="visual-code">
+            <span class="code-line"><span class="code-cmd">docker run</span> -d -p 8000:8000 \</span>
+            <span class="code-line">  -v ./models:/app/models \</span>
+            <span class="code-line">  modelforge:latest</span>
+          </div>
+        </div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🌐</div>
+        <div class="feature-icon-wrapper">
+          <svg class="feature-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
+          </svg>
+        </div>
         <h4>SaaS Cloud Ledger</h4>
         <p>Integrate your Supabase or Firebase tables in one click to sync logs, user keys, and projects securely to the cloud.</p>
+        <div class="card-visual cloud-visual">
+          <div class="visual-header">
+            <span class="visual-title">DATABASE SYNCHRONIZATION</span>
+            <span class="visual-badge connected">CONNECTED</span>
+          </div>
+          <div class="visual-sync-row">
+            <div class="sync-db">
+              <span class="db-dot supabase"></span>
+              <span>Supabase</span>
+            </div>
+            <div class="sync-arrow">
+              <svg width="18" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3l4 4-4 4M21 7H3M7 21l-4-4 4-4M3 17h18"/></svg>
+            </div>
+            <div class="sync-db">
+              <span class="db-dot local"></span>
+              <span>Local Node</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
