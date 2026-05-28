@@ -2391,9 +2391,6 @@ function buildApp() {
         '</div>' +
         '<div class="sidebar-profile-footer" id="sidebar-profile-card" onclick="navigate(\'settings\')">' +
         '</div>' +
-        '<div class="sidebar-legal-footer" style="padding: 10px 16px; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--border-glass); text-align: center; font-weight: 500; line-height: 1.4;">' +
-          'ModelForge &copy; 2026 &middot; <span style="cursor:pointer; text-decoration:underline;" onclick="showTermsOfServiceModal()">Terms</span> &middot; <span style="cursor:pointer; text-decoration:underline;" onclick="showPrivacyPolicyModal()">Privacy</span>' +
-        '</div>' +
       '</aside>' +
       '<div class="main-container">' +
         '<header class="top-bar" id="global-top-bar">' +

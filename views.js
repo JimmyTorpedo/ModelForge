@@ -622,22 +622,7 @@ var VIEW_SETTINGS = `
       </label>
     </div>
   </div>
-  
-  <div class="settings-card" style="margin-bottom: 24px;">
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-purple);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <h3 style="margin:0; font-size:16px; font-weight:700;">Legal &amp; Compliance Core</h3>
-    </div>
-    <div style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height: 1.4;">
-      Review software copyrights, user data privacy provisions (GDPR/CCPA compliance), and customer service agreements.
-    </div>
-    
-    <div style="display:flex; flex-wrap:wrap; gap:12px;">
-      <button class="project-action-btn" onclick="showTermsOfServiceModal()" style="padding: 10px 16px; font-size:12.5px; border-color:var(--border-glass); background:rgba(255,255,255,0.04); cursor:pointer;">View Terms of Service</button>
-      <button class="project-action-btn" onclick="showPrivacyPolicyModal()" style="padding: 10px 16px; font-size:12.5px; border-color:var(--border-glass); background:rgba(255,255,255,0.04); cursor:pointer;">View Privacy Policy</button>
-      <button class="project-action-btn" onclick="showCopyrightModal()" style="padding: 10px 16px; font-size:12.5px; border-color:var(--border-glass); background:rgba(255,255,255,0.04); cursor:pointer;">Software Copyrights &amp; License</button>
-    </div>
-  </div>
+
   
   <div class="settings-card danger" style="border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.02) !important;">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
@@ -729,8 +714,13 @@ var VIEW_LANDING = `
     </div>
   </div>
 
-  <footer class="landing-footer">
-    <p>© 2026 ModelForge AI Technologies. All Rights Reserved. Proprietary Commercial License.</p>
+  <footer class="landing-footer" style="padding: 40px 24px; text-align: center; border-top: 1px solid var(--border-glass); margin-top: 48px; font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+    <p style="margin: 0 0 12px 0; font-weight: 500;">ModelForge &copy; 2026 &middot; Private Sovereign Compute AI Platform &middot; Proprietary B2B Enterprise License.</p>
+    <p style="margin: 0; font-weight: 600;">
+      <span style="cursor:pointer; text-decoration:underline; margin: 0 10px; color: var(--text-muted); transition: var(--transition-smooth);" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'" onclick="showTermsOfServiceModal()">Terms of Service</span> &middot; 
+      <span style="cursor:pointer; text-decoration:underline; margin: 0 10px; color: var(--text-muted); transition: var(--transition-smooth);" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'" onclick="showPrivacyPolicyModal()">Privacy Policy</span> &middot; 
+      <span style="cursor:pointer; text-decoration:underline; margin: 0 10px; color: var(--text-muted); transition: var(--transition-smooth);" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'" onclick="showCopyrightModal()">Software Copyrights &amp; License</span>
+    </p>
   </footer>
 </div>`;
 
