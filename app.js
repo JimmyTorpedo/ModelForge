@@ -447,17 +447,31 @@ function hexToRgb(hex) {
 }
 
 function saveWorkspacesLocal() {
-  localStorage.setItem('workspaces', JSON.stringify(workspaces));
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  localStorage.setItem('workspaces_' + userId, JSON.stringify(workspaces));
 }
 
 function loadWorkspacesLocal() {
-  var data = localStorage.getItem('workspaces');
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  var data = localStorage.getItem('workspaces_' + userId);
+  
+  // Backwards compatibility migration
+  if (!data) {
+    data = localStorage.getItem('workspaces');
+    if (data) {
+      localStorage.setItem('workspaces_' + userId, data);
+      localStorage.removeItem('workspaces');
+    }
+  }
+  
   if (data) {
     try {
       workspaces = JSON.parse(data);
     } catch (e) {
       workspaces = [];
     }
+  } else {
+    workspaces = [];
   }
   
   if (workspaces.length === 0) {
@@ -2801,6 +2815,7 @@ function handleAuthSubmit(event) {
   }
   
   updateProfileDOM();
+  loadWorkspacesLocal(); // Reload workspaces for the newly authenticated user!
   
   // Trigger Cloud Sync if Supabase is connected
   if (supabaseClient) {
@@ -2837,6 +2852,9 @@ function copyOperatorId() {
 function logOutSession() {
   if (!confirm("Are you sure you want to securely terminate your operational session?")) return;
   localStorage.removeItem('mf_session_active');
+  localStorage.removeItem('user_id'); // Clear active user session parameters
+  workspaces = [];
+  activeWorkspaceId = null;
   navigate('landing');
 }
 
@@ -3231,7 +3249,7 @@ function settingsDeleteAllWorkspaces() {
   if (!confirm("⚠️ WARNING: This will permanently delete all workspaces and custom AI models. This action is irreversible. Proceed?")) return;
   workspaces = [];
   customModels = [];
-  localStorage.setItem('workspaces', JSON.stringify([]));
+  saveWorkspacesLocal();
   localStorage.setItem('customModels', JSON.stringify([]));
   alert("All workspace environments successfully deleted.");
   navigate('dashboard');
