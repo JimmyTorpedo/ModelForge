@@ -91,24 +91,53 @@ var activeModelTag    = null;
 // ─── Supabase State Manager ──────────────────────────────────────────────────
 var supabaseClient    = null;
 
-function initSupabase() {
+function syncHandshakeCredentialsToLocalBackend() {
+  var isLocal = window.location.hostname === "localhost" || 
+               window.location.hostname === "127.0.0.1" || 
+               window.location.protocol === "file:";
+  if (!isLocal) return; // Only post when running locally
+  
   var url = localStorage.getItem("supabaseUrl") || "";
   var key = localStorage.getItem("supabaseKey") || "";
+  var userId = localStorage.getItem("user_id") || "default_user";
+  var email = localStorage.getItem("profile_email") || "";
   
-  // Proactively purge legacy default credentials if present in browser localStorage
-  if (url === "https://myrlnkpoenobnfyfogsl.supabase.co") {
-    url = "";
-    localStorage.removeItem("supabaseUrl");
-  }
-  if (key === "sb_publishable_nC_MvMMYu5NmKDIggb8v6A_1rqprPVC") {
-    key = "";
-    localStorage.removeItem("supabaseKey");
-  }
+  if (!url || !key) return; // Need valid credentials
+  
+  fetch("/api/save-handshake", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      supabaseUrl: url,
+      supabaseKey: key,
+      userId: userId,
+      email: email
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    console.log("[Handshake] Supabase keys synced to local backend successfully.");
+  })
+  .catch(function(err) {
+    console.warn("[Handshake] Local backend sync skipped/failed:", err);
+  });
+}
+
+function initSupabase() {
+  var defaultUrl = "https://myrlnkpoenobnfyfogsl.supabase.co";
+  var defaultKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15cmxua3BvZW5vYm5meWZvZ3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDMzMjIsImV4cCI6MjA5NDg3OTMyMn0.qoF0tpFEgl3WEvQt_UjmgO1VzARbzA3pyKsGkv1s6zM";
+  
+  var url = localStorage.getItem("supabaseUrl") || defaultUrl;
+  var key = localStorage.getItem("supabaseKey") || defaultKey;
 
   if (url && key && window.supabase) {
     try {
       supabaseClient = window.supabase.createClient(url, key);
       console.log("Connected to Supabase Database successfully.");
+      
+      // Auto-synchronize keys to local backend config file
+      setTimeout(syncHandshakeCredentialsToLocalBackend, 500);
+      
       return true;
     } catch (e) {
       console.error("Supabase initialization error:", e);
@@ -123,6 +152,9 @@ async function syncProfileFromCloud() {
   if (!supabaseClient) return;
   try {
     var userId = localStorage.getItem('user_id') || 'default_user';
+    var isTester = (userId === 'usr_tester' || localStorage.getItem('profile_email') === 'tests@test.com');
+    
+    // 1. Fetch the actual profile row for this logged in user
     var { data, error } = await supabaseClient
       .from('user_profiles')
       .select('*')
@@ -157,6 +189,47 @@ async function syncProfileFromCloud() {
       } else {
         localStorage.setItem('credits_remaining', data.credits.toString());
       }
+      
+      var tunnelUrlToUse = data.active_tunnel_url;
+      
+      // 2. Guest Tester Connection Handshake: 
+      // If it is the guest tester, retrieve the developer's dynamic tunnel URL
+      if (isTester) {
+        try {
+          var { data: devData, error: devError } = await supabaseClient
+            .from('user_profiles')
+            .select('active_tunnel_url')
+            .eq('id', 'dev_escola_aboba')
+            .single();
+            
+          if (devData && devData.active_tunnel_url) {
+            tunnelUrlToUse = devData.active_tunnel_url;
+          }
+        } catch (e2) {
+          console.warn("Could not retrieve developer tunnel URL for tester:", e2);
+        }
+      }
+      
+      // Automatic Handshake Sync: If remote, pull the active tunnel URL
+      if (tunnelUrlToUse) {
+        var isRemote = window.location.protocol !== "file:" && 
+                       window.location.hostname !== "localhost" && 
+                       window.location.hostname !== "127.0.0.1" && 
+                       window.location.hostname !== "";
+        if (isRemote) {
+          var curBaseUrl = localStorage.getItem("backendBaseUrl");
+          if (curBaseUrl !== tunnelUrlToUse) {
+            localStorage.setItem("backendBaseUrl", tunnelUrlToUse);
+            console.log("[Handshake] Automatic sync! Active remote GPU backend URL updated to: " + tunnelUrlToUse);
+            
+            // Silently verify the connection to update the status telemetry dot
+            if (typeof testBackendConnection === 'function') {
+              setTimeout(testBackendConnection, 500);
+            }
+          }
+        }
+      }
+      
       updateProfileDOM();
     }
   } catch (e) {
@@ -952,6 +1025,12 @@ function updateProfileDOM() {
 }
 
 function editProfileField(field) {
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  if (userId === 'usr_tester') {
+    alert("Guest test account is read-only. Profile editing is disabled.");
+    return;
+  }
+  
   var label = field === 'name' ? 'Operator Name' : field === 'email' ? 'Corporate Email' : 'Startup Entity';
   var key = 'profile_' + field;
   var currentVal = localStorage.getItem(key) || (field === 'name' ? 'John Doe' : field === 'email' ? 'john@company.com' : 'Acme Corp');
@@ -1076,6 +1155,7 @@ function navigate(view) {
   if (view === 'landing' || view === 'auth') {
     if (topBar) topBar.classList.add('hidden');
     if (sidebar) sidebar.classList.add('hidden');
+    hideGlobalOfflineBanner();
     if (main) {
       main.style.padding = '0';
       main.style.maxWidth = 'none';
@@ -2663,9 +2743,22 @@ function handleAuthSubmit(event) {
   localStorage.setItem('mf_session_active', 'true');
   localStorage.setItem('profile_email', email);
   
-  // Check for the Developer Account
+  // Check for the Developer Account or Guest Test Account
+  var isTester = (email === 'tests@test.com');
   var isDev = (email === 'escola.aboba@gmail.com');
-  if (isDev) {
+  
+  if (isTester) {
+    if (password !== 'admin') {
+      alert("Invalid password for guest test account.");
+      return;
+    }
+    localStorage.setItem('profile_role', 'tester');
+    localStorage.setItem('credits_remaining', '5');
+    localStorage.setItem('profile_name', 'Guest Tester');
+    localStorage.setItem('profile_company', 'External Beta Testing');
+    localStorage.setItem('user_id', 'usr_tester');
+    localStorage.setItem('userUsecase', 'guesttest'); // Auto-onboard guest
+  } else if (isDev) {
     localStorage.setItem('profile_role', 'dev');
     localStorage.setItem('credits_remaining', 'Unlimited');
     localStorage.setItem('profile_name', 'Escola Aboba');
@@ -3590,6 +3683,11 @@ function sendGatewayTestMessage() {
 }
 
 function showGlobalOfflineBanner() {
+  if (activeView === 'landing' || activeView === 'auth') {
+    hideGlobalOfflineBanner();
+    return;
+  }
+
   var banner = document.getElementById('global-offline-banner');
   if (banner) {
     banner.classList.remove('hidden');

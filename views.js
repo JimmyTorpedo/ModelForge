@@ -575,6 +575,31 @@ var VIEW_SETTINGS = `
   </div>
   
   <div class="settings-card" style="margin-bottom: 24px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-green);"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <h3 style="margin:0; font-size:16px; font-weight:700;">Cloud Database Connection (Supabase)</h3>
+    </div>
+    <div style="font-size:13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+      Provide your Supabase credentials to securely synchronize models, chat transcripts, and workspace parameters directly to the cloud. All database data transfers run in-memory directly from this browser session.
+    </div>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom: 16px;">
+      <div class="settings-control-block" style="margin:0;">
+        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Supabase Project URL</label>
+        <input type="text" id="settings-supabase-url" class="premium-modal-input" placeholder="https://your-project.supabase.co" style="width: 100%; box-sizing: border-box; margin: 0; font-size:13px;" />
+      </div>
+      <div class="settings-control-block" style="margin:0;">
+        <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">Supabase Anonymous Public Key</label>
+        <input type="password" id="settings-supabase-key" class="premium-modal-input" placeholder="eyJhbGciOi..." style="width: 100%; box-sizing: border-box; margin: 0; font-size:13px;" />
+      </div>
+    </div>
+    
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="project-action-btn" onclick="saveSupabaseSettings()" style="padding: 10px 20px; font-size:13px; background:var(--accent-purple) !important; color:#fff !important; border-color:var(--accent-purple) !important; font-weight:600; cursor:pointer;">Sync &amp; Connect Cloud Database ⚡</button>
+    </div>
+  </div>
+
+  <div class="settings-card" style="margin-bottom: 24px;">
     <h3 style="margin:0 0 16px; font-size:16px; font-weight:700;">Workspace Preferences</h3>
     
     <div class="settings-control-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; padding-bottom:12px; border-bottom: 1px solid var(--border-glass);">
