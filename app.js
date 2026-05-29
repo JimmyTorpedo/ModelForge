@@ -2761,9 +2761,14 @@ function handleAuthSubmit(event) {
   var isTester = (email === 'tests@test.com');
   var isDev = (email === 'escola.aboba@gmail.com');
   
+  if (!isTester && !isDev) {
+    alert("Access Denied: Unregistered account email.");
+    return;
+  }
+  
   if (isTester) {
     if (password !== 'admin') {
-      alert("Invalid password for guest test account.");
+      alert("Access Denied: Invalid password for guest test account.");
       return;
     }
     localStorage.setItem('profile_role', 'tester');
@@ -2779,39 +2784,6 @@ function handleAuthSubmit(event) {
     localStorage.setItem('profile_company', 'ModelForge Core Dev Team');
     localStorage.setItem('user_id', 'dev_escola_aboba');
     localStorage.setItem('userUsecase', 'companydev'); // Auto-onboard dev
-  } else {
-    localStorage.setItem('profile_role', 'user');
-    // Revert credits if they were Unlimited previously in local storage (session switch safeguard)
-    var curCredits = localStorage.getItem('credits_remaining');
-    if (!curCredits || curCredits === 'Unlimited') {
-      localStorage.setItem('credits_remaining', '10');
-    }
-    
-    // Clear developer company/name if logging in as normal user
-    if (localStorage.getItem('profile_name') === 'Escola Aboba') {
-      localStorage.removeItem('profile_name');
-    }
-    if (localStorage.getItem('profile_company') === 'ModelForge Core Dev Team') {
-      localStorage.removeItem('profile_company');
-    }
-    
-    // Formulate default name from operational email
-    if (!localStorage.getItem('profile_name')) {
-      var defaultName = email.split('@')[0];
-      defaultName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
-      localStorage.setItem('profile_name', defaultName);
-    }
-    if (!localStorage.getItem('profile_company')) {
-      localStorage.setItem('profile_company', 'Acme Corp');
-    }
-    
-    // Generate custom Operator ID if not exists or if it was dev ID
-    var curId = localStorage.getItem('user_id');
-    if (!curId || curId === 'dev_escola_aboba' || curId.startsWith('dev_')) {
-      var emailPrefix = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      var randId = Math.random().toString(36).substring(2, 7);
-      localStorage.setItem('user_id', 'usr_' + emailPrefix + '_' + randId);
-    }
   }
   
   updateProfileDOM();
