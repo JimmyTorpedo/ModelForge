@@ -1470,6 +1470,92 @@ REVOLUTIONARY RESPONSIVE & BREAKPOINT ENGINE
   .pricing-grid {
     grid-template-columns: 1fr;
   }
+  
+  /* --- PREMIUM RESPONSIVE MOBILE UI OVERHAUL --- */
+  .projects-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  .project-card {
+    padding: 18px 20px !important;
+    min-height: 170px !important;
+  }
+  
+  /* Prevent title wrapping issues */
+  #workspace-detail-title {
+    font-size: 18px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: calc(100% - 80px) !important;
+  }
+  
+  /* Buttons formatting in Main area */
+  .main button.model-badge {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    margin: 4px 0 !important;
+  }
+  
+  /* Training View metrics card responsive reflow */
+  .progress-grid-metrics {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 16px !important;
+    text-align: center !important;
+  }
+  
+  .progress-grid-metrics .stat-box {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Full-width premium stacking buttons for Training View */
+  .training-view .action-row, 
+  .training-view form,
+  .training-view .action-row + div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  
+  .training-view button, 
+  .training-view a, 
+  .training-view .model-badge,
+  .training-view .action-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    height: auto !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    margin: 4px 0 !important;
+    text-align: center !important;
+  }
+  
+  /* Tiers Grid adaptation */
+  .tiers-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  /* Two-column grid blocks inside settings */
+  .settings-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
 }
 
 /* --- EXTREMELY SMALL SCREENS (< 480px) --- */

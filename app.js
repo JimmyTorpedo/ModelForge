@@ -387,11 +387,23 @@ function autoGrow(element) {
 }
 
 function saveModelsLocal() {
-  localStorage.setItem('customModels', JSON.stringify(customModels));
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  localStorage.setItem('customModels_' + userId, JSON.stringify(customModels));
 }
 
 function loadModelsLocal() {
-  var data = localStorage.getItem('customModels');
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  var data = localStorage.getItem('customModels_' + userId);
+  
+  // Backwards compatibility migration
+  if (!data) {
+    data = localStorage.getItem('customModels');
+    if (data) {
+      localStorage.setItem('customModels_' + userId, data);
+      localStorage.removeItem('customModels');
+    }
+  }
+  
   if (data) {
     try {
       customModels = JSON.parse(data);
@@ -1554,6 +1566,10 @@ function callBuilderAI(userText, fileContext) {
         aiText = "Sorry, I received an invalid response from the free AI engine.";
       }
       aiText = aiText || "No response generated.";
+      
+      // Filter out promotional ads from Pollinations
+      aiText = filterAiOutput(aiText);
+      
       geminiHistory.push({ role: "model", parts: [{ text: aiText }] });
       
       var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need/i.test(aiText);
@@ -2312,16 +2328,21 @@ function updateTrainingProgress(percent, step, total, loss) {
 function completeTraining(tag) {
   // Update state row
   var model = customModels.find(function(m) { return m.tag === tag; });
+  var activeWs = activeWorkspaceId || localStorage.getItem('activeWorkspaceId') || "ws-main";
+  
   if (model) {
     model.status = "ready";
+    if (!model.workspace_id) model.workspace_id = activeWs;
   } else {
-    customModels.unshift({
+    model = {
       tag: tag,
       name: tag,
       params: "7B",
       status: "ready",
+      workspace_id: activeWs,
       created_at: new Date().toISOString()
-    });
+    };
+    customModels.unshift(model);
   }
   saveModelsLocal();
   
@@ -2329,11 +2350,12 @@ function completeTraining(tag) {
     supabaseClient
       .from('models')
       .upsert({
-        tag: tag,
-        name: tag,
-        params: "7B",
+        tag: model.tag,
+        name: model.name || tag,
+        params: model.params || "7B",
         status: "ready",
-        created_at: new Date().toISOString()
+        workspace_id: model.workspace_id || activeWs,
+        created_at: model.created_at || new Date().toISOString()
       }).then();
   }
   
@@ -2788,6 +2810,7 @@ function handleAuthSubmit(event) {
   
   updateProfileDOM();
   loadWorkspacesLocal(); // Reload workspaces for the newly authenticated user!
+  loadModelsLocal(); // Reload custom models for the newly authenticated user!
   
   // Trigger Cloud Sync if Supabase is connected
   if (supabaseClient) {
@@ -2826,6 +2849,7 @@ function logOutSession() {
   localStorage.removeItem('mf_session_active');
   localStorage.removeItem('user_id'); // Clear active user session parameters
   workspaces = [];
+  customModels = []; // Clear in-memory models!
   activeWorkspaceId = null;
   navigate('landing');
 }
@@ -3346,6 +3370,7 @@ async function testBackendConnection() {
     if (response.ok) {
       statusPill.textContent = "Connected";
       statusPill.className = "connection-status-pill connected";
+      setTimeout(syncActiveTrainingStatus, 200);
     } else {
       statusPill.textContent = "Error (" + response.status + ")";
       statusPill.className = "connection-status-pill disconnected";
@@ -3670,6 +3695,50 @@ function sendGatewayTestMessage() {
     chatMessages.appendChild(errDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
+}
+
+function filterAiOutput(text) {
+  if (!text) return "";
+  
+  var patterns = [
+    /Support Pollinations\.AI:[\s\S]*/gi,
+    /Powered by Pollinations\.AI[\s\S]*/gi,
+    /🌸\s*Ad\s*🌸[\s\S]*/gi
+  ];
+  
+  var cleaned = text;
+  for (var i = 0; i < patterns.length; i++) {
+    cleaned = cleaned.replace(patterns[i], "");
+  }
+  
+  // Clean remaining dividers
+  cleaned = cleaned.replace(/---\s*$/gm, "");
+  
+  // Clean multiple newlines
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+  
+  return cleaned.trim();
+}
+
+async function syncActiveTrainingStatus() {
+  if (!supabaseClient) return;
+  var baseUrl = getBaseUrl();
+  try {
+    var response = await fetch(baseUrl + "/status");
+    if (response.ok) {
+      var data = await response.json();
+      if (data && data.status === "complete" && data.model_tag) {
+        // If the model is not already in customModels list as 'ready', complete it!
+        var exists = customModels.find(function(m) { return m.tag === data.model_tag && m.status === 'ready'; });
+        if (!exists) {
+          console.log("[Status Sync] Detected completed model on hardware: " + data.model_tag + ". Syncing to Supabase...");
+          completeTraining(data.model_tag);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Could not sync training status from hardware:", e);
+  }
 }
 
 function showGlobalOfflineBanner() {
