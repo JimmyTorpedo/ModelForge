@@ -152,6 +152,21 @@ var VIEW_PROPOSAL = `
       <div><span style="color:var(--text-secondary)">Internal PDF Training Data:</span> <strong id="spec-pdfs" style="color:var(--text-primary)">None uploaded</strong></div>
     </div>
   </div>
+
+  <div class="proposal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h3 style="margin:0;">Precision &amp; Capacity Tuning (LoRA Rank)</h3>
+      <span style="font-size:12px; color:var(--text-primary); background:rgba(139, 92, 246, 0.15); border:1px solid rgba(139, 92, 246, 0.25); padding:3px 10px; border-radius:12px; font-weight:600;" id="proposal-lora-rank-badge">Rank: 16 (Standard)</span>
+    </div>
+    <p style="font-size:12.5px; color:var(--text-secondary); margin:0 0 16px; line-height: 1.5;">
+      Adjust parameters density. A higher rank increases the model's memory capacity for exact details and rules, but consumes slightly more workstation compute memory.
+    </p>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">16 (Recommended)</span>
+      <input type="range" id="proposal-lora-rank-slider" min="16" max="32" step="8" value="16" style="flex:1; accent-color:var(--accent-purple); cursor:pointer;" oninput="updateLoraRankSlider(this.value)" />
+      <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">32 (High Precision)</span>
+    </div>
+  </div>
   
   <div class="proposal-card">
     <h3>Trained Capabilities</h3>

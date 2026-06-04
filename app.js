@@ -12,13 +12,8 @@ if (metaViewport) {
   metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
 }
 
-if (window.location.protocol !== "file:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "" && !window.location.hostname.endsWith(".local")) {
-  var pwd = prompt("Enter access password to view demo:");
-  if (pwd !== "madeira2026") {
-    document.body.innerHTML = "<h1 style='text-align:center;margin-top:20vh;color:#111827;font-family:sans-serif'>Access Denied</h1>";
-    throw new Error("Access Denied");
-  }
-}
+// Demo password bypass as requested
+
 
 function getBaseUrl() {
   var url = localStorage.getItem("backendBaseUrl");
@@ -1257,6 +1252,8 @@ function navigate(view) {
         activeWorkspaceId = workspaces[0].id;
       }
       populateWorkspaceDetails(activeWorkspaceId);
+    } else if (view === 'training') {
+      connectTrainingWS();
     } else if (view === 'builder') {
       if (!loadOnboardingChatLocal()) {
         var name = "your model";
@@ -1310,11 +1307,12 @@ function renderModelsList() {
     var isReady = m.status === 'ready';
     var isDraft = m.status === 'draft';
     var isTraining = m.status === 'training';
+    var isFailed = m.status === 'failed' || m.status === 'error';
     
-    var dotClass = isReady ? 'ready' : isDraft ? 'draft' : 'training';
-    var badgeClass = isReady ? 'badge-ready' : isDraft ? 'badge-draft' : 'badge-training';
-    var statusText = isReady ? 'Online' : isDraft ? 'DRAFT' : 'FINE-TUNING';
-    var actionText = isReady ? 'Test Chat' : isDraft ? 'Initialize' : 'View Progress ⚡';
+    var dotClass = isReady ? 'ready' : isDraft ? 'draft' : isFailed ? 'failed' : 'training';
+    var badgeClass = isReady ? 'badge-ready' : isDraft ? 'badge-draft' : isFailed ? 'badge-failed' : 'badge-training';
+    var statusText = isReady ? 'Online' : isDraft ? 'DRAFT' : isFailed ? 'FAILED' : 'FINE-TUNING';
+    var actionText = isReady ? 'Test Chat' : isDraft ? 'Initialize' : isFailed ? 'Retry Draft' : 'View Progress ⚡';
     
     return `<div class="model-row">
       <div class="model-dot ${dotClass}" onclick="startModelTestChat('${m.tag}')" style="cursor:pointer"></div>
@@ -1794,8 +1792,32 @@ function openProposalView() {
   var specPdfs = document.getElementById('spec-pdfs');
   if (specPdfs) specPdfs.textContent = pdfs;
   
+  // Reset LoRA rank slider on load
+  var slider = document.getElementById("proposal-lora-rank-slider");
+  if (slider) {
+    slider.value = 16;
+    updateLoraRankSlider(16);
+  }
+  
   navigate('proposal');
 }
+
+function updateLoraRankSlider(val) {
+  var badge = document.getElementById("proposal-lora-rank-badge");
+  if (!badge) return;
+  
+  var text = "Rank: " + val;
+  if (val == 16) {
+    text += " (Standard)";
+  } else if (val == 24) {
+    text += " (High Detail)";
+  } else if (val == 32) {
+    text += " (Maximum Precision)";
+  }
+  badge.textContent = text;
+  localStorage.setItem('proposal_lora_rank', val.toString());
+}
+
 
 // ─── Local Inference Chat Triggers ────────────────────────────────────────────
 var activeTestingTag = "modelforge-custom";
@@ -1805,6 +1827,22 @@ function startModelTestChat(tag) {
   if (model && model.status === 'training') {
     navigate('training');
     connectTrainingWS();
+    return;
+  }
+  if (model && (model.status === 'failed' || model.status === 'error')) {
+    // Let the user re-try or edit the draft details
+    model.status = 'draft';
+    saveModelsLocal();
+    if (supabaseClient) {
+      supabaseClient.from('models').update({ status: 'draft' }).eq('tag', tag).then();
+    }
+    activeModelTag = tag;
+    var builderHeader = document.getElementById('builder-model-name-header');
+    if (builderHeader) {
+      builderHeader.textContent = "Building Model: " + model.name;
+    }
+    navigate('builder');
+    renderModelsList();
     return;
   }
   if (model && model.status === 'draft') {
@@ -2114,7 +2152,8 @@ function triggerTrainingApiCall(modelName) {
     body: JSON.stringify({ content: rundownText })
   }).then(function(r) {
     if (!r.ok) throw new Error("Unable to save chat rundown to hardware backend.");
-    return fetch(getTrainUrl() + "?model_tag=" + modelName, { method: "POST" });
+    var rank = localStorage.getItem('proposal_lora_rank') || '16';
+    return fetch(getTrainUrl() + "?model_tag=" + modelName + "&lora_r=" + rank, { method: "POST" });
   }).then(function(r) {
     if (!r.ok && r.status !== 409) throw new Error("Hardware training engine returned error: " + r.statusText);
   }).catch(function(err) {
@@ -2163,6 +2202,19 @@ function connectTrainingWS() {
         }
       } else if (data.data.status === "complete") {
         completeTraining(data.data.model_tag);
+      } else if (data.data.status === "error") {
+        var errMsg = data.data.error || "Training pipeline encountered an error.";
+        document.getElementById("train-status-text").textContent = "Status: Hardware Interrupted";
+        document.getElementById("train-status-sub").textContent = errMsg;
+        var dot = document.getElementById("train-status-dot-top");
+        if (dot) {
+          dot.style.background = "var(--accent-red)";
+          dot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+        }
+        showTrainingError(errMsg);
+        if (data.data.model_tag) {
+          failTraining(data.data.model_tag, errMsg);
+        }
       }
     } else if (data.event === "phase") {
       updateTrainingPhase(data.phase);
@@ -2173,9 +2225,14 @@ function connectTrainingWS() {
     } else if (data.event === "error") {
       document.getElementById("train-status-text").textContent = "Status: Hardware Interrupted";
       document.getElementById("train-status-sub").textContent = data.message;
-      document.getElementById("train-status-dot-top").style.background = "var(--accent-red)";
-      document.getElementById("train-status-dot-top").style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+      var dot = document.getElementById("train-status-dot-top");
+      if (dot) {
+        dot.style.background = "var(--accent-red)";
+        dot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+      }
       showTrainingError(data.message);
+      var modelTag = getTrainingModelTag();
+      failTraining(modelTag, data.message);
     }
   };
   
@@ -2260,20 +2317,20 @@ function updateTrainingPhase(phase) {
   var currentIdx = phases.indexOf(phase);
   
   if (phase === 'data_prep') {
-    document.getElementById("train-status-text").textContent = "Status: Parsing Documents";
-    document.getElementById("train-status-sub").textContent = "Ingesting PDFs and running synthetic Alpaca generator...";
+    document.getElementById("train-status-text").textContent = "Status: Generating Training Data";
+    document.getElementById("train-status-sub").textContent = "Now creating the JSON prompt pairs from your uploaded PDFs...";
     document.getElementById("training-credits-pct").textContent = "0.4 / 3.0";
   } else if (phase === 'validation') {
-    document.getElementById("train-status-text").textContent = "Status: De-duplication Check";
-    document.getElementById("train-status-sub").textContent = "Filtering synthetic hallucinations and tokenizing dataset...";
+    document.getElementById("train-status-text").textContent = "Status: Validating Datasets";
+    document.getElementById("train-status-sub").textContent = "De-duplicating and reviewing the generated Q&A prompt quality...";
     document.getElementById("training-credits-pct").textContent = "0.8 / 3.0";
   } else if (phase === 'training') {
-    document.getElementById("train-status-text").textContent = "Status: Gradient Fine-Tuning";
-    document.getElementById("train-status-sub").textContent = "Training LoRA layers on private dedicated GPU node...";
+    document.getElementById("train-status-text").textContent = "Status: Fine-Tuning Active";
+    document.getElementById("train-status-sub").textContent = "Training phase starting! Optimizing neural weights using QLoRA + DoRA...";
     document.getElementById("training-credits-pct").textContent = "1.8 / 3.0";
   } else if (phase === 'export') {
-    document.getElementById("train-status-text").textContent = "Status: Compiling quantizations";
-    document.getElementById("train-status-sub").textContent = "Quantizing to 4-bit GGUF and loading in private inference service...";
+    document.getElementById("train-status-text").textContent = "Status: Compiling GGUF Export";
+    document.getElementById("train-status-sub").textContent = "Quantizing model weights to 4-bit and preparing for deployment...";
     document.getElementById("training-credits-pct").textContent = "2.8 / 3.0";
   }
   
@@ -2505,6 +2562,7 @@ function buildApp() {
         '<div class="sidebar-items-list">' +
           sidebarItems +
         '</div>' +
+        '<div id="sidebar-active-training-container"></div>' +
         '<div class="sidebar-profile-footer" id="sidebar-profile-card" onclick="navigate(\'settings\')">' +
         '</div>' +
       '</aside>' +
@@ -3721,24 +3779,138 @@ function filterAiOutput(text) {
 }
 
 async function syncActiveTrainingStatus() {
-  if (!supabaseClient) return;
   var baseUrl = getBaseUrl();
   try {
     var response = await fetch(baseUrl + "/status");
     if (response.ok) {
       var data = await response.json();
-      if (data && data.status === "complete" && data.model_tag) {
-        // If the model is not already in customModels list as 'ready', complete it!
-        var exists = customModels.find(function(m) { return m.tag === data.model_tag && m.status === 'ready'; });
-        if (!exists) {
-          console.log("[Status Sync] Detected completed model on hardware: " + data.model_tag + ". Syncing to Supabase...");
-          completeTraining(data.model_tag);
+      if (data) {
+        if (data.status === "running" && data.model_tag) {
+          // Update local status to training
+          var model = customModels.find(function(m) { return m.tag === data.model_tag; });
+          if (model && model.status !== 'training') {
+            model.status = 'training';
+            saveModelsLocal();
+            renderModelsList();
+          }
+          showTrainingNotificationBanner(data.model_tag);
+        } else if (data.status === "complete" && data.model_tag) {
+          hideTrainingNotificationBanner();
+          var exists = customModels.find(function(m) { return m.tag === data.model_tag && m.status === 'ready'; });
+          if (!exists) {
+            console.log("[Status Sync] Detected completed model on hardware: " + data.model_tag + ". Syncing to Supabase...");
+            completeTraining(data.model_tag);
+          }
+        } else if (data.status === "error" && data.model_tag) {
+          hideTrainingNotificationBanner();
+          var model = customModels.find(function(m) { return m.tag === data.model_tag; });
+          if (model && model.status === 'training') {
+            console.log("[Status Sync] Detected failed training for model: " + data.model_tag);
+            failTraining(data.model_tag, data.error || "Unknown hardware training error.");
+          }
+        } else {
+          hideTrainingNotificationBanner();
         }
       }
     }
   } catch (e) {
     console.warn("Could not sync training status from hardware:", e);
   }
+}
+
+function updateSidebarTrainingCard(modelTag, isVisible) {
+  var container = document.getElementById('sidebar-active-training-container');
+  if (!container) return;
+  
+  if (!isVisible) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  if (container.querySelector('.sidebar-training-card')) {
+    var nameEl = container.querySelector('.sidebar-training-model-name');
+    if (nameEl) nameEl.textContent = modelTag;
+    return;
+  }
+  
+  container.innerHTML = 
+    '<div class="sidebar-training-card" onclick="activeModelTag=\'' + modelTag + '\'; navigate(\'training\')" style="margin: 16px; padding: 12px; background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 10px; cursor: pointer; transition: all 0.3s ease; animation: fadeIn 0.3s ease;">' +
+      '<div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#c084fc; font-weight:700; letter-spacing:0.05em;">' +
+        '<span style="background:#8b5cf6; box-shadow: 0 0 8px #8b5cf6; animation: pulse 1.5s infinite; width: 6px; height: 6px; border-radius: 50%; display: inline-block;"></span>' +
+        '<span>TRAINING ACTIVE</span>' +
+      '</div>' +
+      '<div style="font-size:11px; color:var(--text-secondary); margin-top:6px; line-height:1.3;">' +
+        'Model: <strong class="sidebar-training-model-name" style="color:var(--text-primary)">' + esc(modelTag) + '</strong>' +
+      '</div>' +
+      '<div style="font-size:10px; color:#a78bfa; margin-top:4px; text-decoration:underline;">Click for live metrics ⚡</div>' +
+    '</div>';
+}
+
+function showTrainingNotificationBanner(modelTag) {
+  updateSidebarTrainingCard(modelTag, true);
+  
+  var existing = document.getElementById('global-training-active-banner');
+  if (existing) {
+    var nameEl = existing.querySelector('.training-model-name');
+    if (nameEl) nameEl.textContent = modelTag;
+    existing.classList.remove('hidden');
+    existing.style.display = 'flex';
+    return;
+  }
+  
+  var bannerEl = document.createElement('div');
+  bannerEl.id = 'global-training-active-banner';
+  bannerEl.className = 'training-active-strip';
+  bannerEl.style.cursor = 'pointer';
+  bannerEl.style.margin = '0 0 16px 0';
+  bannerEl.onclick = function() {
+    activeModelTag = modelTag;
+    navigate('training');
+  };
+  
+  bannerEl.innerHTML = 
+    '<div class="offline-warning-content" style="justify-content: space-between; width: 100%; display: flex; align-items: center; padding: 10px 24px; box-sizing: border-box;">' +
+      '<div style="display:flex; align-items:center; gap:8px;">' +
+        '<span class="offline-warning-dot" style="background:#8b5cf6; box-shadow: 0 0 10px #8b5cf6; animation: pulse 1.5s infinite; width: 6px; height: 6px; border-radius: 50%; display: inline-block;"></span>' +
+        '<span>⚙️ <strong>Active Fine-Tuning</strong>: Model <strong class="training-model-name">' + modelTag + '</strong> is currently training on your GPU workstation.</span>' +
+      '</div>' +
+      '<span style="font-weight:600; font-size:12.5px; text-decoration:underline;">Click to View Live Progress ⚡</span>' +
+    '</div>';
+  
+  var header = document.getElementById('global-top-bar');
+  if (header) {
+    header.insertAdjacentElement('afterend', bannerEl);
+  }
+}
+
+function hideTrainingNotificationBanner() {
+  updateSidebarTrainingCard(null, false);
+  var banner = document.getElementById('global-training-active-banner');
+  if (banner) {
+    banner.classList.add('hidden');
+    banner.style.display = 'none';
+  }
+}
+
+function failTraining(tag, errorMessage) {
+  var model = customModels.find(function(m) { return m.tag === tag; });
+  var activeWs = activeWorkspaceId || localStorage.getItem('activeWorkspaceId') || "ws-main";
+  
+  if (model) {
+    model.status = "failed";
+    model.error_message = errorMessage;
+    saveModelsLocal();
+  }
+  
+  if (supabaseClient) {
+    supabaseClient
+      .from('models')
+      .update({ status: 'failed', error_message: errorMessage })
+      .eq('tag', tag)
+      .then();
+  }
+  
+  renderModelsList();
 }
 
 function showGlobalOfflineBanner() {

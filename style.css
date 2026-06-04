@@ -5455,6 +5455,114 @@ header.top-bar.hidden {
   display: none !important;
 }
 
+/* --- B2B Training Active Strip & Failed Status Styles --- */
+.training-active-strip {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
+  color: #c084fc !important;
+  padding: 10px 16px !important;
+  font-size: 12.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 50 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  animation: fadeIn 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+}
+.training-active-strip.hidden {
+  display: none !important;
+}
+.model-dot.failed {
+  background: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+.badge-failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.badge-failed:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+.light-theme .model-dot.failed {
+  background: #dc2626 !important;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.4) !important;
+}
+.light-theme .badge-failed {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border-color: #f87171 !important;
+  font-weight: 600 !important;
+}
+.light-theme .badge-failed:hover {
+  background: #fee2e2 !important;
+}
+
+/* Sidebar training card hover effects & layout */
+.sidebar-training-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-training-card:hover {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.08);
+}
+
+/* Premium B2B Refinements */
+.layout {
+  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%), 
+              radial-gradient(circle at 10% 80%, rgba(59, 130, 246, 0.02) 0%, transparent 50%),
+              #0B0813;
+}
+.light-theme .layout {
+  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.02) 0%, transparent 50%),
+              radial-gradient(circle at 10% 80%, rgba(59, 130, 246, 0.01) 0%, transparent 50%),
+              #F8FAFC;
+}
+.sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+  background: rgba(15, 12, 26, 0.6) !important;
+  backdrop-filter: blur(20px);
+}
+.light-theme .sidebar {
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+.top-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  background: rgba(11, 8, 19, 0.5) !important;
+  backdrop-filter: blur(10px);
+}
+.light-theme .top-bar {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+}
+.model-row {
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.25s ease;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+.model-row:hover {
+  border-color: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.03);
+  transform: translateX(4px);
+}
+.light-theme .model-row {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.5);
+}
+.light-theme .model-row:hover {
+  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.02);
+}
+
+
 /* ========================================================================
    Upgraded Alternating B2B Features Showcase Styles
    ======================================================================== */
