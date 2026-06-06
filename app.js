@@ -226,6 +226,10 @@ async function syncProfileFromCloud() {
       }
       
       updateProfileDOM();
+      
+      // Sync workspaces and models after user profile is synced from cloud
+      syncWorkspacesFromCloud();
+      syncModelsFromCloud();
     }
   } catch (e) {
     console.warn("User profile cloud sync failed:", e);
@@ -267,7 +271,38 @@ async function syncModelsFromCloud() {
     if (error) throw error;
     if (data && data.length > 0) {
       customModels = data;
+      
+      // Map back workspace_id from the workspaces model_tags association
+      customModels.forEach(function(model) {
+        var ws = workspaces.find(function(w) {
+          return w.model_tags && w.model_tags.includes(model.tag);
+        });
+        if (ws) {
+          model.workspace_id = ws.id;
+        } else {
+          if (model.workspace_id && workspaces.find(function(w) { return w.id === model.workspace_id; })) {
+            var wsObj = workspaces.find(function(w) { return w.id === model.workspace_id; });
+            if (wsObj) {
+              if (!wsObj.model_tags) wsObj.model_tags = [];
+              if (!wsObj.model_tags.includes(model.tag)) {
+                wsObj.model_tags.push(model.tag);
+              }
+            }
+          } else {
+            model.workspace_id = "ws-main";
+            var wsObj = workspaces.find(function(w) { return w.id === "ws-main"; });
+            if (wsObj) {
+              if (!wsObj.model_tags) wsObj.model_tags = [];
+              if (!wsObj.model_tags.includes(model.tag)) {
+                wsObj.model_tags.push(model.tag);
+              }
+            }
+          }
+        }
+      });
+      
       saveModelsLocal();
+      saveWorkspacesLocal(); // Sync any updated model_tags mappings back
       renderModelsList();
     }
   } catch (e) {
@@ -456,6 +491,53 @@ function hexToRgb(hex) {
 function saveWorkspacesLocal() {
   var userId = localStorage.getItem('user_id') || 'default_user';
   localStorage.setItem('workspaces_' + userId, JSON.stringify(workspaces));
+  syncWorkspacesToCloud();
+}
+
+async function syncWorkspacesToCloud() {
+  if (!supabaseClient) return;
+  try {
+    var userId = localStorage.getItem('user_id') || 'default_user';
+    await supabaseClient
+      .from('chat_histories')
+      .upsert({
+        id: 'workspaces_' + userId,
+        chat_type: 'workspaces_metadata',
+        messages: workspaces,
+        updated_at: new Date().toISOString()
+      });
+  } catch (e) {
+    console.warn("Workspaces cloud sync failed:", e);
+  }
+}
+
+async function syncWorkspacesFromCloud() {
+  if (!supabaseClient) return;
+  try {
+    var userId = localStorage.getItem('user_id') || 'default_user';
+    var { data, error } = await supabaseClient
+      .from('chat_histories')
+      .select('messages')
+      .eq('id', 'workspaces_' + userId)
+      .single();
+      
+    if (data && data.messages && data.messages.length > 0) {
+      workspaces = data.messages;
+      localStorage.setItem('workspaces_' + userId, JSON.stringify(workspaces));
+      
+      var savedActiveWs = localStorage.getItem('activeWorkspaceId');
+      if (savedActiveWs && workspaces.find(function(w) { return w.id === savedActiveWs; })) {
+        activeWorkspaceId = savedActiveWs;
+      } else if (workspaces.length > 0) {
+        activeWorkspaceId = workspaces[0].id;
+      }
+      
+      renderWorkspacesList();
+      renderModelsList();
+    }
+  } catch (e) {
+    console.warn("Workspaces cloud fetch failed:", e);
+  }
 }
 
 function loadWorkspacesLocal() {
@@ -490,7 +572,8 @@ function loadWorkspacesLocal() {
         description: "Your primary workstation for custom-trained business AI adapters.",
         usecase: curUsecase,
         color: "purple",
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        model_tags: []
       },
       {
         id: "ws-edu",
@@ -498,13 +581,17 @@ function loadWorkspacesLocal() {
         description: "Academic workstation for research, training limits, and experimentations.",
         usecase: "education",
         color: "blue",
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        model_tags: []
       }
     ];
     saveWorkspacesLocal();
   }
 
-  if (!activeWorkspaceId && workspaces.length > 0) {
+  var savedActiveWs = localStorage.getItem('activeWorkspaceId');
+  if (savedActiveWs && workspaces.find(function(w) { return w.id === savedActiveWs; })) {
+    activeWorkspaceId = savedActiveWs;
+  } else if (workspaces.length > 0) {
     activeWorkspaceId = workspaces[0].id;
   }
 }
@@ -591,6 +678,7 @@ function filterWorkspaces(query) {
 
 function openWorkspace(id) {
   activeWorkspaceId = id;
+  localStorage.setItem('activeWorkspaceId', id);
   navigate('mymodels');
 }
 
@@ -938,6 +1026,17 @@ function commitCreateModel() {
 
   customModels.unshift(newModel);
   saveModelsLocal();
+  
+  // Associate with workspace tags for cloud synchronization mapping
+  var activeWsObj = workspaces.find(function(w) { return w.id === activeWorkspaceId; });
+  if (activeWsObj) {
+    if (!activeWsObj.model_tags) activeWsObj.model_tags = [];
+    if (!activeWsObj.model_tags.includes(activeModelTag)) {
+      activeWsObj.model_tags.push(activeModelTag);
+    }
+    saveWorkspacesLocal();
+  }
+  
   closeModal('create-model-modal');
 
   var builderHeader = document.getElementById('builder-model-name-header');
@@ -1376,6 +1475,14 @@ function deleteModel(tag) {
   
   customModels = customModels.filter(function(m) { return m.tag !== tag; });
   saveModelsLocal();
+  
+  // Clean from workspaces tags
+  workspaces.forEach(function(w) {
+    if (w.model_tags) {
+      w.model_tags = w.model_tags.filter(function(t) { return t !== tag; });
+    }
+  });
+  saveWorkspacesLocal();
   
   // REST backend deletion call
   fetch(getBaseUrl() + "/delete_model", {
@@ -2064,6 +2171,16 @@ function startTrainingPipeline() {
       if (supabaseClient) {
         supabaseClient.from('models').upsert(model).then();
       }
+      
+      // Ensure it is associated in the active workspace's tags
+      var activeWsObj = workspaces.find(function(w) { return w.id === activeWorkspaceId; });
+      if (activeWsObj) {
+        if (!activeWsObj.model_tags) activeWsObj.model_tags = [];
+        if (!activeWsObj.model_tags.includes(modelName)) {
+          activeWsObj.model_tags.push(modelName);
+        }
+        saveWorkspacesLocal();
+      }
     }
   } else {
     modelName = "modelforge-" + Math.random().toString(36).substring(2, 7);
@@ -2080,6 +2197,16 @@ function startTrainingPipeline() {
       saveModelsLocal();
       if (supabaseClient) {
         supabaseClient.from('models').upsert(customModels[0]).then();
+      }
+      
+      // Ensure it is associated in the active workspace's tags
+      var activeWsObj = workspaces.find(function(w) { return w.id === activeWorkspaceId; });
+      if (activeWsObj) {
+        if (!activeWsObj.model_tags) activeWsObj.model_tags = [];
+        if (!activeWsObj.model_tags.includes(modelName)) {
+          activeWsObj.model_tags.push(modelName);
+        }
+        saveWorkspacesLocal();
       }
     }
   }
@@ -2655,6 +2782,7 @@ function buildApp() {
   initSupabase();
   syncProfileFromCloud();
   syncModelsFromCloud();
+  syncWorkspacesFromCloud();
   syncChatsFromCloud();
   
   // Populate profiles
