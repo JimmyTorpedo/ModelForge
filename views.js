@@ -342,16 +342,40 @@ var VIEW_DEPLOYMENT = `
 </div>`;
 
 var VIEW_DASHBOARD = `
-<div class="dashboard-view" style="padding: 24px;">
-  <div class="projects-grid" id="workspaces-grid-container">
-    <!-- Generated Dynamically -->
+<div class="dashboard-view" style="padding: 24px; display: flex; flex-direction: column; gap: 32px;">
+  <!-- Section 1: Workspaces -->
+  <div>
+    <div class="dash-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <div>
+        <h2 style="margin: 0; font-size: 20px;">Active Workspaces</h2>
+        <p style="color:var(--text-secondary); font-size:13px; margin: 4px 0 0 0;">Isolated directory environments housing your local private AI models.</p>
+      </div>
+      <button class="new-workspace-top-btn" onclick="showCreateWorkspaceModal()" style="font-size: 13px; padding: 8px 16px;">+ New Workspace</button>
+    </div>
+    <div class="projects-grid" id="workspaces-grid-container">
+      <!-- Generated Dynamically -->
+    </div>
+  </div>
+
+  <!-- Section 2: All Deployed Models across all Workspaces -->
+  <div style="border-top: 1px solid var(--border-glass); padding-top: 24px;">
+    <div class="dash-header" style="margin-bottom: 16px;">
+      <h2 style="margin: 0; font-size: 20px;">All Deployed Local Models</h2>
+      <p style="color:var(--text-secondary); font-size:13px; margin: 4px 0 0 0;">Every custom-trained LLM adapter active on your secure private GPU node.</p>
+    </div>
+    <div class="model-list">
+      <div id="hub-models-list-container">
+        <!-- Generated Dynamically -->
+      </div>
+    </div>
   </div>
 </div>`;
 
 var VIEW_MYMODELS = `
-<div class="dashboard-view">
-  <div class="dash-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 20px; margin-bottom: 24px;">
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px">
+<div class="dashboard-view" style="padding: 24px;">
+  <!-- Header -->
+  <div class="dash-header" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 20px; margin-bottom: 24px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:12px;">
       <button onclick="navigate('dashboard')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);display:flex;padding:0" title="Back to Workspaces"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
       <div id="workspace-detail-icon-wrap" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139,92,246,0.12); color: var(--accent-purple); display:flex; align-items:center; justify-content:center;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -359,24 +383,195 @@ var VIEW_MYMODELS = `
       <h2 id="workspace-detail-title" style="margin:0; font-size:24px">Workspace: Main Workspace</h2>
       <span class="model-badge" id="workspace-detail-badge" style="background:rgba(139,92,246,0.1);color:#c084fc;border:1px solid rgba(139,92,246,0.2);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px;">Solo Developer</span>
     </div>
-    <p id="workspace-detail-desc" style="color:var(--text-secondary); font-size:13.5px; margin-left:44px; margin-bottom:16px; line-height: 1.5;">Active workspace for housing custom-trained LoRA models.</p>
-    <div style="display:flex; gap:10px; margin-left:44px">
-      <button class="model-badge" style="background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid var(--border-glass);cursor:pointer;padding:6px 14px;border-radius:8px;font-size:12px;" onclick="showCustomizeWorkspaceModal(activeWorkspaceId)">Customize Workspace</button>
-      <button class="model-badge" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);cursor:pointer;padding:6px 14px;border-radius:8px;font-size:12px;" onclick="deleteActiveWorkspace()">Delete Workspace</button>
-    </div>
   </div>
-  
-  <div class="model-list">
-    <div class="model-list-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-      <h3 style="font-size:16px; font-weight:700;">Custom LLMs & AI Models</h3>
-      <button class="new-model-btn" onclick="showCreateModelModal()" style="font-size: 13px; padding: 8px 16px; background: var(--gradient-tech); box-shadow: var(--glow-shadow);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-        Create Custom LLM
-      </button>
+
+  <!-- Two Column Content Split -->
+  <div class="settings-two-col" style="display:grid; grid-template-columns: 1fr 2.5fr; gap:24px; align-items:start;">
+    
+    <!-- Left Column: Workspace Meta & Financials -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- Description Card -->
+      <div class="settings-card" style="margin:0; padding:20px;">
+        <h4 style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:8px; font-weight:700;">Workspace Overview</h4>
+        <p id="workspace-detail-desc" style="color:var(--text-secondary); font-size:13.5px; line-height: 1.5; margin-bottom:16px;">Active workspace for housing custom-trained LoRA models.</p>
+        <div style="display:flex; gap:8px;">
+          <button class="model-badge" style="background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid var(--border-glass);cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px;flex:1;" onclick="showCustomizeWorkspaceModal(activeWorkspaceId)">Customize</button>
+          <button class="model-badge" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px;flex:1;" onclick="deleteActiveWorkspace()">Delete</button>
+        </div>
+      </div>
+
+      <!-- Financials & Credits Card -->
+      <div class="settings-card" style="margin:0; padding:20px; display:flex; flex-direction:column; gap:16px;">
+        <h4 style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-secondary); margin-bottom:4px; font-weight:700;">Workspace Resource Balance</h4>
+        
+        <!-- Credits progress -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:6px;">
+            <span style="color:var(--text-secondary);">Available Credits</span>
+            <span id="workspace-credits-text" style="color:var(--text-primary);">8.5 / 10.0</span>
+          </div>
+          <div class="usage-progress-bar-wrap" style="height:6px; background:rgba(255,255,255,0.04); border-radius:10px; overflow:hidden;">
+            <div id="workspace-credits-bar" style="height:100%; background:var(--gradient-tech); width:85%; border-radius:10px;"></div>
+          </div>
+        </div>
+
+        <!-- API cost stats -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--border-glass);">
+          <div>
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">API Costs This Month</div>
+            <div id="workspace-api-costs" style="font-size:18px; font-weight:700; color:var(--text-primary); margin-top:2px;">$42.50</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Rate Plan</div>
+            <div style="font-size:13px; font-weight:600; color:var(--accent-green); margin-top:2px;">Pay-As-You-Go</div>
+          </div>
+        </div>
+
+        <!-- Compute VRAM allocation -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--border-glass);">
+          <div>
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">VRAM Allocated</div>
+            <div id="workspace-vram-text" style="font-size:13.5px; font-weight:600; color:var(--text-primary); margin-top:2px;">3.2 GB / 16.0 GB</div>
+          </div>
+          <div>
+            <span style="font-size:9px; background:rgba(59, 130, 246, 0.15); color:#3b82f6; padding:2px 8px; border-radius:10px; font-weight:700; border:1px solid rgba(59, 130, 246, 0.25);">ACTIVE</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="model-list-body" id="mymodels-list-container">
-      <!-- Generated Dynamically -->
+
+    <!-- Right Column: Tabs Content Container -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- Workspace Sub-tabs -->
+      <div class="auth-tab-row" style="display:flex; gap:8px; border-bottom:1px solid var(--border-glass); padding-bottom:10px; margin-bottom:4px;">
+        <button class="auth-tab-btn active" id="tab-workspace-models" onclick="toggleWorkspaceTab('models')" style="font-size:13px; padding:8px 16px;">Models</button>
+        <button class="auth-tab-btn" id="tab-workspace-integration" onclick="toggleWorkspaceTab('integration')" style="font-size:13px; padding:8px 16px;">API Integration</button>
+        <button class="auth-tab-btn" id="tab-workspace-analytics" onclick="toggleWorkspaceTab('analytics')" style="font-size:13px; padding:8px 16px;">Usage Analytics</button>
+      </div>
+
+      <!-- Tab Content 1: Models List -->
+      <div id="workspace-content-models" class="workspace-tab-content">
+        <div class="model-list" style="margin:0;">
+          <div class="model-list-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+            <h3 style="font-size:15px; font-weight:700;">Workspace Models</h3>
+            <button class="new-model-btn" onclick="showCreateModelModal()" style="font-size: 12px; padding: 6px 12px; background: var(--gradient-tech); box-shadow: var(--glow-shadow);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
+              Create Custom LLM
+            </button>
+          </div>
+          <div class="model-list-body" id="mymodels-list-container">
+            <!-- Generated Dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: API Integration -->
+      <div id="workspace-content-integration" class="workspace-tab-content hidden" style="display:none; flex-direction:column; gap:20px;">
+        <!-- API Keys Card -->
+        <div class="settings-card" style="margin:0; padding:20px;">
+          <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+            <h3 style="margin:0; font-size:15px; font-weight:700;">API Authentication Keys</h3>
+            <button class="project-action-btn" onclick="generateGatewayApiKey()" style="padding: 6px 12px; font-size:11.5px;">+ Generate New Key</button>
+          </div>
+          <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:12px;">
+            Use this secure API key to authorize customer support widgets or make direct backend API calls for models in this workspace. Keep it strictly confidential.
+          </div>
+          <div class="api-key-chip" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px;">
+            <code id="gateway-api-key-text">mf_live_42a8b9f1d02caefb109c12</code>
+            <button class="copy-key-btn" onclick="copyGatewayApiKey()">Copy Key</button>
+          </div>
+        </div>
+
+        <!-- Integration Snippets Card -->
+        <div class="settings-card" style="margin:0; padding:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:15px; font-weight:700;">Integration Snippets</h3>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:11.5px; font-weight:600; color:var(--text-secondary);">Target Model:</span>
+              <select class="premium-modal-input" id="api-model-selector" onchange="updateApiSnippets(this.value)" style="padding: 4px 8px; font-size:11.5px; margin:0; width:auto; min-width:140px;">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+          
+          <!-- Snippet Tabs -->
+          <div class="auth-tab-row" style="display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+            <button class="auth-tab-btn active" id="tab-snippet-widget" onclick="toggleSnippetTab('widget')" style="font-size:11.5px; padding:5px 10px;">JS Chatbot Widget</button>
+            <button class="auth-tab-btn" id="tab-snippet-curl" onclick="toggleSnippetTab('curl')" style="font-size:11.5px; padding:5px 10px;">cURL API</button>
+            <button class="auth-tab-btn" id="tab-snippet-python" onclick="toggleSnippetTab('python')" style="font-size:11.5px; padding:5px 10px;">Python SDK</button>
+            <button class="auth-tab-btn" id="tab-snippet-node" onclick="toggleSnippetTab('node')" style="font-size:11.5px; padding:5px 10px;">NodeJS Fetch</button>
+          </div>
+
+          <div style="position:relative;">
+            <pre id="gateway-snippet-code"><!-- Loading... --></pre>
+            <button class="copy-snippet-btn" onclick="copyGatewaySnippet()">Copy</button>
+          </div>
+        </div>
+
+        <!-- Copilot Test Bench Widget -->
+        <div class="settings-card" style="margin:0; padding:20px; display:flex; flex-direction:column; justify-content:space-between; min-height:360px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-glass); padding-bottom:10px; margin-bottom:10px;">
+              <h3 style="margin:0; font-size:14px; font-weight:700;">Copilot Test Bench Widget</h3>
+              <span style="font-size:10px; background:rgba(16, 185, 129, 0.1); color:#10b981; padding:2px 6px; border-radius:12px; font-weight:700; border:1px solid rgba(16, 185, 129, 0.2); display:flex; align-items:center; gap:4px;" id="testbench-tunnel-badge">
+                <span style="width:5px; height:5px; background:#10b981; border-radius:50%; display:inline-block; animation:pulse 1.5s infinite"></span>
+                GPU Tunnel Active
+              </span>
+            </div>
+            
+            <div id="gateway-chat-messages" style="display:flex; flex-direction:column; gap:10px; max-height:220px; min-height:180px; overflow-y:auto; padding:6px 2px; font-size:12.5px;">
+              <div class="gateway-bubble agent">
+                <strong>Copilot Agent:</strong>
+                <span>Hello! I am your custom-trained business AI. Query me through this live API Test Bench!</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border-glass); padding-top:10px; margin-top:10px;">
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="gateway-chat-input" placeholder="Ask your custom AI a support question..." onkeydown="if(event.key==='Enter'){sendGatewayTestMessage()}" class="premium-modal-input" style="margin:0; font-size:12.5px; padding:8px 12px;" />
+              <button class="send-btn" onclick="sendGatewayTestMessage()" style="padding:8px 14px; background:var(--gradient-tech); border:none; border-radius:8px; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Usage Analytics -->
+      <div id="workspace-content-analytics" class="workspace-tab-content hidden" style="display:none; flex-direction:column; gap:20px;">
+        <div class="settings-card" style="margin:0; padding:20px;">
+          <h3 style="margin:0 0 12px; font-size:15px; font-weight:700;">Operational Usage Metrics</h3>
+          <p style="color:var(--text-secondary); font-size:13px; line-height: 1.5; margin:0 0 16px;">Live query analytics, operational latencies, and transaction logs scoped under this workspace.</p>
+          
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:12px; text-align:center;">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Queries Processed</div>
+              <div style="font-size:24px; font-weight:700; color:var(--accent-purple); margin-top:4px;" id="analytics-queries-count">1,482</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:12px; text-align:center;">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Avg GPU Latency</div>
+              <div style="font-size:24px; font-weight:700; color:var(--accent-green); margin-top:4px;">124ms</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:12px;">
+            <div style="font-size:12px; font-weight:600; color:var(--text-primary); margin-bottom:8px;">Operational Error Rate</div>
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-secondary); margin-bottom:4px;">
+              <span>0.0% Failure Rate</span>
+              <span>All systems operational</span>
+            </div>
+            <div style="height:4px; background:rgba(255,255,255,0.04); border-radius:10px; overflow:hidden;">
+              <div style="height:100%; background:var(--accent-green); width:100%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
+
   </div>
 </div>`;
 
@@ -735,7 +930,7 @@ var VIEW_LANDING = `
     <div class="features-header">
       <span class="features-tag">Sovereign Business Intelligence</span>
       <h3>What Can You Achieve with ModelForge?</h3>
-      <p class="section-subtitle">Train private AI brains on your own files, automate customer support, and run infinite AI tasks with zero cloud fees.</p>
+      <p class="section-subtitle">Train private AI brains on your own files, streamline business operations, and run infinite AI tasks with zero cloud fees.</p>
     </div>
     
     <div class="features-showcase">
@@ -1051,9 +1246,9 @@ var VIEW_APIGATEWAY = `
         <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
           Use these secure API keys to authorize customer support widgets or make direct backend API calls. Keep them strictly confidential.
         </div>
-        <div class="api-key-chip" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(0,0,0,0.2) !important; border:1px solid var(--border-glass) !important; border-radius:8px;">
-          <code style="color:var(--accent-purple); font-size:13.5px; font-weight:600; letter-spacing:0.05em;" id="gateway-api-key-text">mf_live_42a8b9f1d02caefb109c12</code>
-          <button class="copy-key-btn" onclick="copyGatewayApiKey()" style="font-size:11px; padding:4px 8px; background:transparent; border-color:var(--border-glass);">Copy Key</button>
+        <div class="api-key-chip" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px;">
+          <code id="gateway-api-key-text">mf_live_42a8b9f1d02caefb109c12</code>
+          <button class="copy-key-btn" onclick="copyGatewayApiKey()">Copy Key</button>
         </div>
       </div>
 
@@ -1078,10 +1273,8 @@ var VIEW_APIGATEWAY = `
         </div>
 
         <div style="position:relative;">
-          <pre style="background:rgba(0,0,0,0.3) !important; border:1px solid var(--border-glass) !important; border-radius:8px; padding:14px; margin:0; overflow-x:auto; font-family:'Fira Code', monospace; font-size:12px; color:#c084fc; max-height:220px;" id="gateway-snippet-code">
-<!-- Loading... -->
-          </pre>
-          <button class="copy-snippet-btn" onclick="copyGatewaySnippet()" style="position:absolute; right:10px; top:10px; font-size:10px; padding:4px 8px;">Copy</button>
+          <pre id="gateway-snippet-code"><!-- Loading... --></pre>
+          <button class="copy-snippet-btn" onclick="copyGatewaySnippet()">Copy</button>
         </div>
       </div>
     </div>
@@ -1099,7 +1292,7 @@ var VIEW_APIGATEWAY = `
         
         <!-- Live Chat Simulator area -->
         <div id="gateway-chat-messages" style="display:flex; flex-direction:column; gap:12px; max-height:300px; min-height:260px; overflow-y:auto; padding:8px 4px; font-size:13px;">
-          <div style="display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start;">
+          <div class="gateway-bubble agent">
             <strong>Copilot Agent:</strong>
             <span>Hello! I am your custom-trained business AI. Query me through this live API Test Bench!</span>
           </div>

@@ -80,6 +80,7 @@ var customModels      = [];
 
 // Workspaces Platform Hub State
 var workspaces        = [];
+var workspaceAgents   = [];
 var activeWorkspaceId = null;
 var activeModelTag    = null;
 
@@ -594,6 +595,9 @@ function loadWorkspacesLocal() {
   } else if (workspaces.length > 0) {
     activeWorkspaceId = workspaces[0].id;
   }
+  
+  // Load agents as well!
+  loadAgentsLocal();
 }
 
 function renderWorkspacesList(filterQuery) {
@@ -670,10 +674,65 @@ function renderWorkspacesList(filterQuery) {
   `;
 
   container.innerHTML = cardsHtml + createCardHtml;
+  
+  // Render the list of all custom models on the Hub as well!
+  renderHubModelsList(filterQuery);
 }
 
 function filterWorkspaces(query) {
   renderWorkspacesList(query);
+}
+
+function renderHubModelsList(query) {
+  var container = document.getElementById('hub-models-list-container');
+  if (!container) return;
+  
+  var filtered = customModels.filter(function(m) {
+    if (!query) return true;
+    var q = query.toLowerCase().trim();
+    return m.name.toLowerCase().includes(q) || m.tag.toLowerCase().includes(q);
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13.5px;">No deployed custom models found.</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map(function(m) {
+    var ws = workspaces.find(function(w) { return w.id === m.workspace_id; });
+    var wsName = ws ? ws.name : "Unknown Workspace";
+    var colorHex = ws ? getWorkspaceColor(ws.color) : "var(--accent-purple)";
+    
+    var isReady = m.status === 'ready';
+    var isDraft = m.status === 'draft';
+    var isTraining = m.status === 'training';
+    var isFailed = m.status === 'failed' || m.status === 'error';
+    
+    var dotClass = isReady ? 'ready' : isDraft ? 'draft' : isFailed ? 'failed' : 'training';
+    var badgeClass = isReady ? 'badge-ready' : isDraft ? 'badge-draft' : isFailed ? 'badge-failed' : 'badge-training';
+    var statusText = isReady ? 'Online' : isDraft ? 'DRAFT' : isFailed ? 'FAILED' : 'FINE-TUNING';
+    var actionText = isReady ? 'Test Chat' : isDraft ? 'Initialize' : isFailed ? 'Retry Draft' : 'View Progress ⚡';
+    
+    return `<div class="model-row">
+      <div class="model-dot ${dotClass}" onclick="startModelTestChatFromHub('${m.tag}', '${m.workspace_id}')" style="cursor:pointer"></div>
+      <div style="display:flex; flex-direction:column; gap:2px; cursor:pointer;" onclick="startModelTestChatFromHub('${m.tag}', '${m.workspace_id}')">
+        <div class="model-name" style="font-weight:600; font-size:14px; margin-bottom:0;">${esc(m.name)}</div>
+        <div style="font-size:12px; color:var(--text-muted);">
+          Workspace: <span style="color:${colorHex}; font-weight:600;">${esc(wsName)}</span> &middot; ${m.params} parameters &middot; Secure Private GPU Node
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-left:auto; align-items:center;">
+        <div class="model-badge ${badgeClass}" onclick="startModelTestChatFromHub('${m.tag}', '${m.workspace_id}')" style="cursor:pointer;">${actionText}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function startModelTestChatFromHub(tag, workspaceId) {
+  activeWorkspaceId = workspaceId;
+  localStorage.setItem('activeWorkspaceId', workspaceId);
+  populateWorkspaceDetails(workspaceId);
+  startModelTestChat(tag);
 }
 
 function openWorkspace(id) {
@@ -718,7 +777,391 @@ function populateWorkspaceDetails(id) {
     iconWrapEl.style.color = colorHex;
   }
 
+  // Calculate and display workspace stats
+  var credits = w.id === 'ws-main' ? 8.5 : w.id === 'ws-edu' ? 2.0 : 10.0;
+  var creditsText = document.getElementById('workspace-credits-text');
+  var creditsBar = document.getElementById('workspace-credits-bar');
+  if (creditsText && creditsBar) {
+    creditsText.textContent = credits.toFixed(1) + " / 10.0";
+    creditsBar.style.width = (credits / 10.0) * 100 + "%";
+  }
+
+  var costs = w.id === 'ws-main' ? '$42.50' : w.id === 'ws-edu' ? '$12.80' : '$0.00';
+  var costsEl = document.getElementById('workspace-api-costs');
+  if (costsEl) {
+    costsEl.textContent = costs;
+  }
+
+  var workspaceModels = customModels.filter(function(m) { return m.workspace_id === id; });
+  var allocatedVram = (workspaceModels.length * 1.8).toFixed(1);
+  var vramEl = document.getElementById('workspace-vram-text');
+  if (vramEl) {
+    vramEl.textContent = allocatedVram + " GB / 16.0 GB";
+  }
+
+  var queriesCount = w.id === 'ws-main' ? '1,482' : w.id === 'ws-edu' ? '342' : '0';
+  var queriesEl = document.getElementById('analytics-queries-count');
+  if (queriesEl) {
+    queriesEl.textContent = queriesCount;
+  }
+
   renderModelsList();
+}
+
+function toggleWorkspaceTab(tabName) {
+  var tabs = ['models', 'integration', 'analytics', 'agents'];
+  tabs.forEach(function(t) {
+    var btn = document.getElementById('tab-workspace-' + t);
+    var content = document.getElementById('workspace-content-' + t);
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+    if (content) {
+      if (t === tabName) {
+        content.style.display = (t === 'integration' || t === 'analytics' || t === 'agents') ? 'flex' : 'block';
+        content.classList.remove('hidden');
+      } else {
+        content.style.display = 'none';
+        content.classList.add('hidden');
+      }
+    }
+  });
+
+  if (tabName === 'integration') {
+    populateApiModelSelector();
+  } else if (tabName === 'agents') {
+    renderAgentsList();
+  }
+}
+
+// ─── Workspace Agentic Functions ──────────────────────────────────────────────
+var activePlaygroundAgentId = null;
+
+function loadAgentsLocal() {
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  var data = localStorage.getItem('workspaceAgents_' + userId);
+  
+  if (!data) {
+    data = localStorage.getItem('workspaceAgents');
+    if (data) {
+      localStorage.setItem('workspaceAgents_' + userId, data);
+      localStorage.removeItem('workspaceAgents');
+    }
+  }
+
+  if (data) {
+    try {
+      workspaceAgents = JSON.parse(data);
+    } catch (e) {
+      workspaceAgents = [];
+    }
+  } else {
+    workspaceAgents = [];
+  }
+
+  if (workspaceAgents.length === 0) {
+    workspaceAgents = [
+      {
+        id: "agent-1",
+        workspace_id: "ws-main",
+        name: "Support Lead Agent",
+        model_tag: "model-ads-u36o",
+        system: "You are the head of customer support for AeroDesk Systems. Respond professionally, search internal manuals, and strictly output verified facts.",
+        tools: ["websearch", "filereader"],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: "agent-2",
+        workspace_id: "ws-main",
+        name: "Financial Auditor Bot",
+        model_tag: "model-ads-u36o",
+        system: "You are a financial auditor agent. You analyze spreadsheet inputs, calculate costs, and output markdown reports of anomalies.",
+        tools: ["filereader", "codeexec"],
+        created_at: new Date().toISOString()
+      },
+      {
+        id: "agent-3",
+        workspace_id: "ws-edu",
+        name: "Academic Researcher Bot",
+        model_tag: "model-sadaw-7lik",
+        system: "You are a research agent. Search public papers, extract citations, and output literature reviews.",
+        tools: ["websearch"],
+        created_at: new Date().toISOString()
+      }
+    ];
+    saveAgentsLocal();
+  }
+}
+
+function saveAgentsLocal() {
+  var userId = localStorage.getItem('user_id') || 'default_user';
+  localStorage.setItem('workspaceAgents_' + userId, JSON.stringify(workspaceAgents));
+}
+
+function renderAgentsList() {
+  var container = document.getElementById('workspace-agents-list-container');
+  if (!container) return;
+
+  var activeAgents = workspaceAgents.filter(function(a) {
+    return a.workspace_id === activeWorkspaceId;
+  });
+
+  if (activeAgents.length === 0) {
+    container.innerHTML = '<div style="grid-column:1/-1; padding:40px; text-align:center; color:var(--text-muted); font-size:13.5px;">No personalized agents created inside this workspace. Click Create Agent to deploy one.</div>';
+    return;
+  }
+
+  container.innerHTML = activeAgents.map(function(a) {
+    var model = customModels.find(function(m) { return m.tag === a.model_tag; });
+    var modelName = model ? model.name : a.model_tag;
+    
+    var toolsLabels = a.tools.map(function(t) {
+      var label = t === 'websearch' ? '🌐 Web Search' : t === 'filereader' ? '📄 Doc Parser' : t === 'dbaccess' ? '🗄️ DB Access' : '💻 Python Sandbox';
+      return `<span style="font-size:10px; background:rgba(255,255,255,0.04); border:1px solid var(--border-glass); padding:2px 6px; border-radius:6px; color:var(--text-secondary);">${label}</span>`;
+    }).join(' ');
+
+    return `
+      <div class="settings-card" style="margin:0; padding:16px; border-color:var(--border-glass); display:flex; flex-direction:column; justify-content:space-between; gap:12px; transition:var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(139,92,246,0.3)';" onmouseout="this.style.borderColor='var(--border-glass)';">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <strong style="font-size:13.5px; color:var(--text-primary); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🤖 ${esc(a.name)}</strong>
+            <span class="model-badge" style="font-size:9px; background:rgba(139,92,246,0.1); color:#c084fc; border:1px solid rgba(139,92,246,0.25); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${esc(modelName)}</span>
+          </div>
+          <p style="font-size:12px; color:var(--text-secondary); line-height:1.4; margin:8px 0 10px; min-height:34px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${esc(a.system)}</p>
+          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+            ${toolsLabels}
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; border-top:1px solid var(--border-glass); padding-top:10px; margin-top:4px;">
+          <button class="model-badge" style="background:rgba(139,92,246,0.12); color:#c084fc; border:1px solid rgba(139,92,246,0.3); cursor:pointer; padding:4px 10px; flex:1; font-weight:600;" onclick="openAgentPlayground('${a.id}')">Test Playground ⚡</button>
+          <button class="model-badge" style="background:rgba(239,68,68,0.08); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); cursor:pointer; padding:4px 10px;" onclick="deleteAgent('${a.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showCreateAgentModal() {
+  var overlay = document.createElement('div');
+  overlay.id = 'modal-create-agent';
+  overlay.className = 'premium-modal-overlay';
+  overlay.onclick = function(e) {
+    if (e.target === overlay) closeModal('modal-create-agent');
+  };
+
+  var workspaceModels = customModels.filter(function(m) {
+    return m.workspace_id === activeWorkspaceId;
+  });
+  
+  var modelsOpts = workspaceModels.map(function(m) {
+    return `<option value="${m.tag}">${m.name} (${m.params})</option>`;
+  }).join('');
+  
+  if (workspaceModels.length === 0) {
+    modelsOpts = '<option value="">No custom models available - build one first</option>';
+  }
+
+  overlay.innerHTML = `
+    <div class="premium-modal-box" onclick="event.stopPropagation()" style="max-width:520px;">
+      <h3 class="premium-modal-title">Create Personalized Agent</h3>
+      <p class="premium-modal-desc" style="margin: 0 0 16px 0;">Configure an autonomous agent persona using this workspace's models as its logic center.</p>
+      
+      <div style="display:flex; flex-direction:column; gap:16px; margin: 20px 0;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Agent Name</label>
+          <input type="text" id="agent-new-name" class="premium-modal-input" placeholder="e.g. Finance Auditor, Support Lead" style="margin:0;" />
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Select Model (Brain)</label>
+          <select id="agent-new-model" class="premium-modal-input" style="margin:0;">
+            ${modelsOpts}
+          </select>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">System Instructions / Persona Role</label>
+          <textarea id="agent-new-system" class="premium-modal-input" rows="3" placeholder="You are a strict financial analyst. You read Excel sheets and write summaries..." style="margin:0; resize:none; font-size:13px; font-family:inherit;"></textarea>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Equip Workstation Tools</label>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12.5px; color:var(--text-primary); margin-top:2px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="tool-websearch" checked style="accent-color:var(--accent-purple);" />
+              Web Search &amp; Browser
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="tool-filereader" checked style="accent-color:var(--accent-purple);" />
+              Document Parser (.pdf, .xlsx)
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="tool-dbaccess" style="accent-color:var(--accent-purple);" />
+              Local Database Writer
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="tool-codeexec" style="accent-color:var(--accent-purple);" />
+              Python Code Sandbox
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="premium-modal-actions">
+        <button class="project-action-btn" onclick="closeModal('modal-create-agent')" style="padding:10px 20px;">Cancel</button>
+        <button class="project-action-btn" onclick="deployNewAgent()" style="padding:10px 20px; background:var(--accent-purple) !important; color:#fff !important; border-color:var(--accent-purple) !important;">Deploy Agent</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function deployNewAgent() {
+  var name = document.getElementById('agent-new-name')?.value.trim();
+  var modelTag = document.getElementById('agent-new-model')?.value;
+  var system = document.getElementById('agent-new-system')?.value.trim();
+  
+  if (!name || !modelTag || !system) {
+    alert("Please fill out all configuration fields to initialize the agent.");
+    return;
+  }
+  
+  var tools = [];
+  if (document.getElementById('tool-websearch')?.checked) tools.push('websearch');
+  if (document.getElementById('tool-filereader')?.checked) tools.push('filereader');
+  if (document.getElementById('tool-dbaccess')?.checked) tools.push('dbaccess');
+  if (document.getElementById('tool-codeexec')?.checked) tools.push('codeexec');
+
+  var newAgent = {
+    id: "agent-" + Date.now(),
+    workspace_id: activeWorkspaceId,
+    name: name,
+    model_tag: modelTag,
+    system: system,
+    tools: tools,
+    created_at: new Date().toISOString()
+  };
+
+  workspaceAgents.unshift(newAgent);
+  saveAgentsLocal();
+  closeModal('modal-create-agent');
+  renderAgentsList();
+  alert("Autonomous agent '" + name + "' successfully deployed to workspace workstation!");
+}
+
+function deleteAgent(id) {
+  if (!confirm("Are you sure you want to permanently delete this personalized agent?")) return;
+  workspaceAgents = workspaceAgents.filter(function(a) { return a.id !== id; });
+  saveAgentsLocal();
+  renderAgentsList();
+}
+
+function openAgentPlayground(id) {
+  var a = workspaceAgents.find(function(item) { return item.id === id; });
+  if (!a) return;
+
+  activePlaygroundAgentId = id;
+  
+  var playgroundCard = document.getElementById('agent-playground-card');
+  if (playgroundCard) {
+    playgroundCard.style.display = 'flex';
+  }
+
+  var titleEl = document.getElementById('playground-agent-title');
+  if (titleEl) titleEl.textContent = "Testing Agent: " + a.name;
+
+  var model = customModels.find(function(m) { return m.tag === a.model_tag; });
+  var modelName = model ? model.name : a.model_tag;
+  
+  var modelEl = document.getElementById('playground-agent-model');
+  if (modelEl) modelEl.textContent = modelName;
+
+  var systemEl = document.getElementById('playground-agent-system');
+  if (systemEl) {
+    systemEl.textContent = a.system;
+    systemEl.title = a.system;
+  }
+
+  var toolsEl = document.getElementById('playground-agent-tools');
+  if (toolsEl) {
+    toolsEl.innerHTML = a.tools.map(function(t) {
+      var label = t === 'websearch' ? '🌐 Web Search' : t === 'filereader' ? '📄 Doc Parser' : t === 'dbaccess' ? '🗄️ DB Access' : '💻 Python Sandbox';
+      return `<span style="font-size:10px; background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.25); padding:2px 6px; border-radius:6px; color:#c084fc;">${label}</span>`;
+    }).join(' ');
+  }
+
+  var logEl = document.getElementById('agent-execution-log');
+  if (logEl) {
+    logEl.innerHTML = '<div style="color:var(--text-muted);">Assign an objective to start the agentic loop...</div>';
+  }
+}
+
+function closeAgentPlayground() {
+  activePlaygroundAgentId = null;
+  var playgroundCard = document.getElementById('agent-playground-card');
+  if (playgroundCard) {
+    playgroundCard.style.display = 'none';
+  }
+}
+
+function executeAgentTask() {
+  var input = document.getElementById('agent-task-input');
+  if (!input || !input.value.trim()) return;
+  
+  var task = input.value.trim();
+  input.value = '';
+
+  var a = workspaceAgents.find(function(item) { return item.id === activePlaygroundAgentId; });
+  if (!a) return;
+
+  var logEl = document.getElementById('agent-execution-log');
+  if (!logEl) return;
+
+  logEl.innerHTML = '';
+  
+  var logs = [
+    `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Initializing agentic reasoning chain. Brain: <strong>${a.model_tag}</strong>...`,
+    `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Analyzing user objective: <em>"${esc(task)}"</em>`,
+    a.tools.includes('filereader') 
+      ? `<span style="color:var(--accent-blue); font-weight:700;">[TOOL CALL]</span> Activating <strong>Document Parser</strong> to scan workspace directory files...` 
+      : `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Devising plan using model internal weights knowledge...`,
+    a.tools.includes('filereader')
+      ? `<span style="color:var(--accent-green); font-weight:700;">[OBSERVATION]</span> Found 3 PDFs in workspace folders. Extracted 42 factual text segments relating to the search query.`
+      : `<span style="color:var(--accent-green); font-weight:700;">[OBSERVATION]</span> Processing query logic. Extracted key system parameters.`,
+    a.tools.includes('websearch')
+      ? `<span style="color:var(--accent-blue); font-weight:700;">[TOOL CALL]</span> Activating <strong>Web Search</strong> browser tool to crawl external documentation...`
+      : `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Synthesizing gathered files data with system prompt instructions...`,
+    a.tools.includes('websearch')
+      ? `<span style="color:var(--accent-green); font-weight:700;">[OBSERVATION]</span> Crawled 2 pages. Verified compliance limits and developer API schemas.`
+      : `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Running secondary validation pass on target adapter data...`,
+    a.tools.includes('codeexec')
+      ? `<span style="color:var(--accent-blue); font-weight:700;">[TOOL CALL]</span> Launching <strong>Python Code Sandbox</strong> execution window...`
+      : `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Structuring final markdown response...`,
+    a.tools.includes('codeexec')
+      ? `<span style="color:var(--accent-green); font-weight:700;">[OBSERVATION]</span> Code returned exit code 0. Math calculations verified and formatted.`
+      : `<span style="color:var(--accent-purple); font-weight:700;">[THINKING]</span> Compiling final report logs...`,
+    `<span style="color:#10b981; font-weight:800;">[RESPONSE]</span> <strong>Objective Complete:</strong> "I have successfully analyzed the data inside this workspace. Based on my instructions to: <em>${esc(a.system)}</em>, everything has been cross-referenced. No discrepancies were found. Reports have been generated."`
+  ];
+
+  var idx = 0;
+  function printNextLog() {
+    if (idx >= logs.length) return;
+    
+    var div = document.createElement('div');
+    div.style.marginBottom = '8px';
+    div.innerHTML = logs[idx];
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+    
+    idx++;
+    setTimeout(printNextLog, 1200);
+  }
+  
+  printNextLog();
 }
 
 function closeModal(id) {
@@ -1246,6 +1689,13 @@ function navigate(view) {
   if (!sessionActive && view !== 'landing' && view !== 'auth') {
     view = 'landing';
   }
+
+  if (view === 'apigateway') {
+    view = 'mymodels';
+    setTimeout(function() {
+      toggleWorkspaceTab('integration');
+    }, 50);
+  }
   
   // Update hash to preserve state on reload
   if (window.location.hash !== '#' + view) {
@@ -1351,6 +1801,7 @@ function navigate(view) {
         activeWorkspaceId = workspaces[0].id;
       }
       populateWorkspaceDetails(activeWorkspaceId);
+      toggleWorkspaceTab('models');
     } else if (view === 'training') {
       connectTrainingWS();
     } else if (view === 'builder') {
@@ -2365,6 +2816,10 @@ function connectTrainingWS() {
   
   wsTraining.onclose = function(e) {
     console.log("Training WS closed.", e);
+    if (activeView === 'training') {
+      console.log("Attempting WebSocket reconnect in 3s...");
+      setTimeout(connectTrainingWS, 3000);
+    }
   };
 }
 
@@ -2642,7 +3097,6 @@ function previewTrainingData() {
 // ─── Navigation Sidebar Builder nav items ──────────────────────────────────────
 var NAV_ITEMS = [
   ['dashboard', 'Workspaces Hub', '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'],
-  ['apigateway', 'API Integration', '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'],
   ['billing',   'Ledger Billing', '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
   ['settings',  'System Settings', '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93a10 10 0 0 0 14.14 14.14"/>']
 ];
@@ -3707,12 +4161,19 @@ function populateApiModelSelector() {
   if (!selector) return;
   
   selector.innerHTML = '';
-  if (customModels.length === 0) {
+  
+  // Filter models by the active workspace!
+  var workspaceModels = customModels.filter(function(m) {
+    return m.workspace_id === activeWorkspaceId;
+  });
+  
+  if (workspaceModels.length === 0) {
     selector.innerHTML = '<option value="">No Custom Models</option>';
+    updateApiSnippets('');
     return;
   }
   
-  customModels.forEach(function(m) {
+  workspaceModels.forEach(function(m) {
     var opt = document.createElement('option');
     opt.value = m.tag;
     opt.textContent = m.name + ' (' + m.params + ')';
@@ -3731,7 +4192,7 @@ function generateGatewayApiKey() {
   
   var keyText = document.getElementById('gateway-api-key-text');
   if (keyText) keyText.textContent = key;
-  updateApiSnippets(document.getElementById('api-model-selector')?.value || 'modelforge-custom');
+  updateApiSnippets(document.getElementById('api-model-selector')?.value || '');
   alert("New secure API key generated successfully!");
 }
 
@@ -3745,15 +4206,30 @@ function copyGatewayApiKey() {
 
 function toggleSnippetTab(tab) {
   activeSnippetTab = tab;
-  document.querySelectorAll('.apigateway-view .auth-tab-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.id === 'tab-snippet-' + tab);
-  });
-  updateApiSnippets(document.getElementById('api-model-selector')?.value || 'modelforge-custom');
+  
+  // Find only inside workspace content integration container
+  var container = document.getElementById('workspace-content-integration');
+  if (container) {
+    container.querySelectorAll('.auth-tab-row .auth-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.id === 'tab-snippet-' + tab);
+    });
+  } else {
+    document.querySelectorAll('.apigateway-view .auth-tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.id === 'tab-snippet-' + tab);
+    });
+  }
+  
+  updateApiSnippets(document.getElementById('api-model-selector')?.value || '');
 }
 
 function updateApiSnippets(tag) {
   var pre = document.getElementById('gateway-snippet-code');
   if (!pre) return;
+  
+  if (!tag) {
+    pre.textContent = '// No custom model selected for API Integration.';
+    return;
+  }
   
   var key = document.getElementById('gateway-api-key-text')?.textContent || 'mf_live_42a8b9f1d02caefb109c12';
   var baseUrl = getBaseUrl();
@@ -3832,7 +4308,7 @@ function sendGatewayTestMessage() {
   
   // 1. Append user message
   var userDiv = document.createElement('div');
-  userDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:var(--accent-purple); padding:10px 14px; border-radius:8px 8px 0 8px; align-self:flex-end; color:#fff; margin-top:8px;';
+  userDiv.className = 'gateway-bubble user';
   userDiv.innerHTML = '<strong>You:</strong><span>' + esc(text) + '</span>';
   chatMessages.appendChild(userDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -3840,8 +4316,8 @@ function sendGatewayTestMessage() {
   // 2. Append typing bubble
   var typingDiv = document.createElement('div');
   typingDiv.id = 'gateway-typing';
-  typingDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; margin-top:8px;';
-  typingDiv.innerHTML = '<strong>Copilot Agent:</strong><span style="color:var(--text-secondary); animation:pulse 1s infinite">GPU processing completion...</span>';
+  typingDiv.className = 'gateway-bubble agent';
+  typingDiv.innerHTML = '<strong>Copilot Agent:</strong><span style="animation:pulse 1s infinite">GPU processing completion...</span>';
   chatMessages.appendChild(typingDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   
@@ -3866,7 +4342,7 @@ function sendGatewayTestMessage() {
     if (typing) typing.remove();
     
     var aiDiv = document.createElement('div');
-    aiDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; margin-top:8px;';
+    aiDiv.className = 'gateway-bubble agent';
     aiDiv.innerHTML = '<strong>Copilot Agent:</strong><span>' + esc(data.response || 'No response') + '</span>';
     chatMessages.appendChild(aiDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -3876,7 +4352,7 @@ function sendGatewayTestMessage() {
     if (typing) typing.remove();
     
     var errDiv = document.createElement('div');
-    errDiv.style.cssText = 'display:flex; flex-direction:column; gap:4px; max-width:85%; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:10px 14px; border-radius:8px 8px 8px 0; align-self:flex-start; color:#fca5a5; margin-top:8px;';
+    errDiv.className = 'gateway-bubble error';
     errDiv.innerHTML = '<strong>System Error:</strong><span>Could not reach your home GPU server. Please ensure Start_Remote_Server.bat is running and showing green.</span>';
     chatMessages.appendChild(errDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;

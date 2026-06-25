@@ -6428,6 +6428,174 @@ header.top-bar.hidden {
   }
 }
 
+/* ========================================================================
+   API Integration Gateway UI Color Fixes
+   ======================================================================== */
+
+/* API key field styling */
+.api-key-chip {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 8px !important;
+}
+
+.api-key-chip code {
+  color: var(--accent-purple) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.api-key-chip .copy-key-btn {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  background: transparent !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  border-radius: 4px !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.api-key-chip .copy-key-btn:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-purple) !important;
+}
+
+/* Code Snippet Box styling */
+#gateway-snippet-code {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 8px !important;
+  padding: 14px !important;
+  margin: 0 !important;
+  overflow-x: auto !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  color: #c084fc !important;
+  max-height: 220px !important;
+  display: block !important;
+}
+
+.copy-snippet-btn {
+  position: absolute !important;
+  right: 10px !important;
+  top: 10px !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.copy-snippet-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-purple) !important;
+}
+
+/* Gateway Live Test Bench Chat Bubbles */
+.gateway-bubble {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  max-width: 85% !important;
+  padding: 10px 14px !important;
+  margin-top: 8px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.gateway-bubble.agent {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px 8px 8px 0 !important;
+  align-self: flex-start !important;
+  border: 1px solid var(--border-glass) !important;
+}
+
+.gateway-bubble.user {
+  background: var(--accent-purple) !important;
+  color: #ffffff !important;
+  border-radius: 8px 8px 0 8px !important;
+  align-self: flex-end !important;
+  border: 1px solid transparent !important;
+}
+
+.gateway-bubble.error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border-radius: 8px 8px 8px 0 !important;
+  align-self: flex-start !important;
+}
+
+/* ========================================================================
+   LIGHT MODE OVERRIDES FOR API GATEWAY UI
+   ======================================================================== */
+
+.light-theme .api-key-chip {
+  background: #fafafa !important;
+  border-color: #eaeaea !important;
+}
+
+.light-theme .api-key-chip code {
+  color: #7c3aed !important; /* Premium vibrant purple for high contrast */
+}
+
+.light-theme .api-key-chip .copy-key-btn {
+  background: #ffffff !important;
+  border-color: #eaeaea !important;
+  color: #666666 !important;
+}
+
+.light-theme .api-key-chip .copy-key-btn:hover {
+  background: #fafafa !important;
+  color: #000000 !important;
+  border-color: #7c3aed !important;
+}
+
+.light-theme #gateway-snippet-code {
+  background: #fafafa !important;
+  border-color: #eaeaea !important;
+  color: #5b21b6 !important; /* Dark purple code text for great readability on light grey */
+}
+
+.light-theme .copy-snippet-btn {
+  background: #ffffff !important;
+  border-color: #eaeaea !important;
+  color: #666666 !important;
+}
+
+.light-theme .copy-snippet-btn:hover {
+  background: #fafafa !important;
+  color: #000000 !important;
+  border-color: #7c3aed !important;
+}
+
+.light-theme .gateway-bubble.agent {
+  background: #f9fafb !important;
+  color: #090d16 !important;
+  border: 1px solid #eaeaea !important;
+}
+
+.light-theme .gateway-bubble.user {
+  background: #7c3aed !important; /* Premium purple user bubble in light mode */
+  color: #ffffff !important;
+}
+
+.light-theme .gateway-bubble.error {
+  background: #fef2f2 !important;
+  border: 1px solid #fee2e2 !important;
+  color: #ef4444 !important;
+}
+
+
 
 
 
