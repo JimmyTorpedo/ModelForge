@@ -30,7 +30,7 @@ function getBaseUrl() {
 
   if (!url) {
     if (isRemote) {
-      url = "https://scenario-protest-franchise-abroad.trycloudflare.com";
+      url = "https://substances-african-learn-nice.trycloudflare.com";
     } else {
       url = "http://localhost:8000";
     }
