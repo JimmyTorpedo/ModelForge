@@ -28,6 +28,12 @@ function getBaseUrl() {
     localStorage.removeItem("backendBaseUrl");
   }
 
+  // If running locally and the saved URL is a remote tunnel URL, clear it to default to localhost backend
+  if (!isRemote && url && url.includes("trycloudflare.com")) {
+    url = null;
+    localStorage.removeItem("backendBaseUrl");
+  }
+
   if (!url) {
     if (isRemote) {
       url = "https://substances-african-learn-nice.trycloudflare.com";
@@ -60,8 +66,9 @@ var SYSTEM_PROMPT = "You are the onboarding assistant for ModelForge, a SaaS pla
   "2. The scale of usage (e.g. daily users or queries).\\n" +
   "3. The specific Tone of Voice the AI should use (e.g. professional, casual, empathetic).\\n" +
   "4. Any strict rules, formatting requirements, or edge cases the AI must handle.\\n" +
-  "5. Whether they have internal PDF documents to upload as training data.\\n\\n" +
-  "Keep your answers concise, friendly, and professional. Do NOT tell the user you have everything you need until ALL 5 of these points have been explicitly discussed and clarified. Once all 5 points are thoroughly covered, tell the user you have everything you need and suggest they click the 'Generate Model Proposal' button.";
+  "5. Whether they have internal PDF documents to upload as training data.\\n" +
+  "6. Whether they prefer a 'Hybrid' setup (fine-tuning core brand tone/rules once, while retrieving frequently changing product details or policies from a separate, instantly-updatable file) or a 'Hard-wired' setup (fine-tuning all static information directly into the neural network weights because data doesn't change).\\n\\n" +
+  "Keep your answers concise, friendly, and professional. Do NOT tell the user you have everything you need until ALL 6 of these points have been explicitly discussed and clarified. Once all 6 points are thoroughly covered, tell the user you have everything you need and suggest they click the 'Generate Model Proposal' button.";
 
 var onboardingStates = {};
 
@@ -100,7 +107,7 @@ function syncHandshakeCredentialsToLocalBackend() {
   
   if (!url || !key) return; // Need valid credentials
   
-  fetch("/api/save-handshake", {
+  fetch(getBaseUrl() + "/api/save-handshake", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -1986,7 +1993,8 @@ function renderMessages() {
     var fileTag = m.file
       ? '<div style="font-size:11px;opacity:.75;margin-bottom:6px">&#128206; ' + esc(m.file) + '</div>'
       : '';
-    var btn = m.showBtn
+    var hasProposalKeyword = !isUser && /generate model proposal|click.*proposal|proposal button|i have everything i need|model proposal is being generated|you'll see a link shortly|model generation complete|proposal link/i.test(m.text);
+    var btn = (m.showBtn || hasProposalKeyword)
       ? '<div style="display: block; margin-top: 12px; clear: both;"><button class="proposal-btn" onclick="openProposalView()">&#10024; Generate Model Proposal</button></div>'
       : '';
 
@@ -2128,7 +2136,7 @@ function callBuilderAI(userText, fileContext) {
       
       geminiHistory.push({ role: "model", parts: [{ text: aiText }] });
       
-      var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need/i.test(aiText);
+      var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need|model proposal is being generated|you'll see a link shortly/i.test(aiText);
       messages.push({ role: 'ai', text: aiText, showBtn: signalsReady });
       renderMessages();
       saveOnboardingChatLocal();
@@ -2185,7 +2193,7 @@ function callBuilderAI(userText, fileContext) {
       } catch (e) {
         aiText = "Sorry, I received an invalid response from the API.";
       }
-      var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need/i.test(aiText);
+      var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need|model proposal is being generated|you'll see a link shortly/i.test(aiText);
       messages.push({ role: 'ai', text: aiText, showBtn: signalsReady });
       renderMessages();
       saveOnboardingChatLocal();
@@ -2233,7 +2241,7 @@ function tryLocalOrJsOnboarding(sendBtn) {
     var aiText = data.response || "No response generated.";
     geminiHistory.push({ role: "model", parts: [{ text: aiText }] });
 
-    var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need/i.test(aiText);
+    var signalsReady = /generate model proposal|click.*proposal|proposal button|i have everything i need|model proposal is being generated|you'll see a link shortly/i.test(aiText);
     messages.push({ role: 'ai', text: aiText, showBtn: signalsReady });
     renderMessages();
     saveOnboardingChatLocal();
@@ -2736,13 +2744,15 @@ function triggerTrainingApiCall(modelName) {
     if (!r.ok && r.status !== 409) throw new Error("Hardware training engine returned error: " + r.statusText);
   }).catch(function(err) {
     console.error("Hardware API error:", err);
-    showTrainingError(err.toString());
+    showTrainingError(err.toString(), true);
   });
 }
 
 function connectTrainingWS() {
   if (wsTraining) {
     try {
+      wsTraining.onclose = null;
+      wsTraining.onerror = null;
       wsTraining.close();
     } catch(e) {}
   }
@@ -2754,7 +2764,7 @@ function connectTrainingWS() {
     wsTraining = new WebSocket(wsUrl);
   } catch(e) {
     console.error("WebSocket instantiation error:", e);
-    showTrainingError("Failed to initiate WebSocket connection: " + e.toString());
+    showTrainingError("Failed to initiate WebSocket connection: " + e.toString(), true);
     return;
   }
   
@@ -2765,52 +2775,60 @@ function connectTrainingWS() {
   
   wsTraining.onerror = function(err) {
     console.error("Training WS connection error:", err);
-    showTrainingError("WebSocket connection to " + wsUrl + " failed. Ensure your backend server is running and port 8000 is open.");
+    showTrainingError("WebSocket connection to " + wsUrl + " failed. Ensure your backend server is running and port 8000 is open.", true);
   };
   
   wsTraining.onmessage = function(event) {
-    var data = JSON.parse(event.data);
-    
-    if (data.event === "state") {
-      if (data.data.status === "running") {
-        if (data.data.phase) updateTrainingPhase(data.data.phase);
-        if (data.data.step > 0) {
-          var pct = Math.floor((data.data.step / Math.max(data.data.total, 1)) * 100);
-          updateTrainingProgress(pct, data.data.step, data.data.total, data.data.loss);
+    try {
+      var data = JSON.parse(event.data);
+      
+      if (data.event === "state") {
+        if (data.data.status === "running") {
+          if (data.data.phase) updateTrainingPhase(data.data.phase);
+          if (data.data.step > 0) {
+            var pct = Math.floor((data.data.step / Math.max(data.data.total, 1)) * 100);
+            updateTrainingProgress(pct, data.data.step, data.data.total, data.data.loss);
+          }
+        } else if (data.data.status === "complete") {
+          completeTraining(data.data.model_tag);
+        } else if (data.data.status === "error") {
+          var errMsg = data.data.error || "Training pipeline encountered an error.";
+          var statusText = document.getElementById("train-status-text");
+          if (statusText) statusText.textContent = "Status: Hardware Interrupted";
+          var statusSub = document.getElementById("train-status-sub");
+          if (statusSub) statusSub.textContent = errMsg;
+          var dot = document.getElementById("train-status-dot-top");
+          if (dot) {
+            dot.style.background = "var(--accent-red)";
+            dot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+          }
+          showTrainingError(errMsg, false);
+          if (data.data.model_tag) {
+            failTraining(data.data.model_tag, errMsg);
+          }
         }
-      } else if (data.data.status === "complete") {
-        completeTraining(data.data.model_tag);
-      } else if (data.data.status === "error") {
-        var errMsg = data.data.error || "Training pipeline encountered an error.";
-        document.getElementById("train-status-text").textContent = "Status: Hardware Interrupted";
-        document.getElementById("train-status-sub").textContent = errMsg;
+      } else if (data.event === "phase") {
+        updateTrainingPhase(data.phase);
+      } else if (data.event === "progress") {
+        updateTrainingProgress(data.percent, data.step, data.total, data.loss);
+      } else if (data.event === "complete") {
+        completeTraining(data.model_tag);
+      } else if (data.event === "error") {
+        var statusText = document.getElementById("train-status-text");
+        if (statusText) statusText.textContent = "Status: Hardware Interrupted";
+        var statusSub = document.getElementById("train-status-sub");
+        if (statusSub) statusSub.textContent = data.message;
         var dot = document.getElementById("train-status-dot-top");
         if (dot) {
           dot.style.background = "var(--accent-red)";
           dot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
         }
-        showTrainingError(errMsg);
-        if (data.data.model_tag) {
-          failTraining(data.data.model_tag, errMsg);
-        }
+        showTrainingError(data.message, false);
+        var modelTag = getTrainingModelTag();
+        failTraining(modelTag, data.message);
       }
-    } else if (data.event === "phase") {
-      updateTrainingPhase(data.phase);
-    } else if (data.event === "progress") {
-      updateTrainingProgress(data.percent, data.step, data.total, data.loss);
-    } else if (data.event === "complete") {
-      completeTraining(data.model_tag);
-    } else if (data.event === "error") {
-      document.getElementById("train-status-text").textContent = "Status: Hardware Interrupted";
-      document.getElementById("train-status-sub").textContent = data.message;
-      var dot = document.getElementById("train-status-dot-top");
-      if (dot) {
-        dot.style.background = "var(--accent-red)";
-        dot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
-      }
-      showTrainingError(data.message);
-      var modelTag = getTrainingModelTag();
-      failTraining(modelTag, data.message);
+    } catch (err) {
+      console.error("Error in WebSocket onmessage handler:", err);
     }
   };
   
@@ -2823,7 +2841,7 @@ function connectTrainingWS() {
   };
 }
 
-function showTrainingError(msg) {
+function showTrainingError(msg, isConnectionError) {
   var errCard = document.getElementById('training-error-card');
   var errDetails = document.getElementById('training-error-details');
   if (errCard && errDetails) {
@@ -2835,8 +2853,14 @@ function showTrainingError(msg) {
   var statusSub = document.getElementById('train-status-sub');
   var statusDot = document.getElementById('train-status-dot-top');
   
-  if (statusText) statusText.textContent = "Status: Connection Failed";
-  if (statusSub) statusSub.textContent = "Unable to connect to local hardware API.";
+  if (isConnectionError) {
+    if (statusText) statusText.textContent = "Status: Connection Failed";
+    if (statusSub) statusSub.textContent = msg || "Unable to connect to local hardware API.";
+  } else {
+    if (statusText) statusText.textContent = "Status: Pipeline Error";
+    if (statusSub) statusSub.textContent = msg || "Training pipeline encountered an error.";
+  }
+  
   if (statusDot) {
     statusDot.style.background = "#ef4444";
     statusDot.style.boxShadow = "0 0 8px #ef4444";
@@ -2898,22 +2922,26 @@ function updateTrainingPhase(phase) {
   var phases = ['data_prep', 'validation', 'training', 'export'];
   var currentIdx = phases.indexOf(phase);
   
+  var statusText = document.getElementById("train-status-text");
+  var statusSub = document.getElementById("train-status-sub");
+  var creditsPct = document.getElementById("training-credits-pct");
+
   if (phase === 'data_prep') {
-    document.getElementById("train-status-text").textContent = "Status: Generating Training Data";
-    document.getElementById("train-status-sub").textContent = "Now creating the JSON prompt pairs from your uploaded PDFs...";
-    document.getElementById("training-credits-pct").textContent = "0.4 / 3.0";
+    if (statusText) statusText.textContent = "Status: Generating Training Data";
+    if (statusSub) statusSub.textContent = "Now creating the JSON prompt pairs from your uploaded PDFs...";
+    if (creditsPct) creditsPct.textContent = "0.4 / 3.0";
   } else if (phase === 'validation') {
-    document.getElementById("train-status-text").textContent = "Status: Validating Datasets";
-    document.getElementById("train-status-sub").textContent = "De-duplicating and reviewing the generated Q&A prompt quality...";
-    document.getElementById("training-credits-pct").textContent = "0.8 / 3.0";
+    if (statusText) statusText.textContent = "Status: Validating Datasets";
+    if (statusSub) statusSub.textContent = "De-duplicating and reviewing the generated Q&A prompt quality...";
+    if (creditsPct) creditsPct.textContent = "0.8 / 3.0";
   } else if (phase === 'training') {
-    document.getElementById("train-status-text").textContent = "Status: Fine-Tuning Active";
-    document.getElementById("train-status-sub").textContent = "Training phase starting! Optimizing neural weights using QLoRA + DoRA...";
-    document.getElementById("training-credits-pct").textContent = "1.8 / 3.0";
+    if (statusText) statusText.textContent = "Status: Fine-Tuning Active";
+    if (statusSub) statusSub.textContent = "Training phase starting! Optimizing neural weights using QLoRA + DoRA...";
+    if (creditsPct) creditsPct.textContent = "1.8 / 3.0";
   } else if (phase === 'export') {
-    document.getElementById("train-status-text").textContent = "Status: Compiling GGUF Export";
-    document.getElementById("train-status-sub").textContent = "Quantizing model weights to 4-bit and preparing for deployment...";
-    document.getElementById("training-credits-pct").textContent = "2.8 / 3.0";
+    if (statusText) statusText.textContent = "Status: Compiling GGUF Export";
+    if (statusSub) statusSub.textContent = "Quantizing model weights to 4-bit and preparing for deployment...";
+    if (creditsPct) creditsPct.textContent = "2.8 / 3.0";
   }
   
   phases.forEach(function(p, i) {
@@ -3994,6 +4022,30 @@ async function testBackendConnection() {
   statusPill.textContent = "Checking...";
   statusPill.className = "connection-status-pill checking";
   
+  // 1. Try to read the active remote tunnel URL directly from the local server's file if running on a local port
+  if (window.location.protocol !== "file:") {
+    try {
+      var txtRes = await fetch(window.location.origin + "/remote_access_url.txt", { cache: "no-store" });
+      if (txtRes.ok) {
+        var txtUrl = (await txtRes.text()).trim();
+        if (txtUrl && txtUrl.startsWith("http")) {
+          // If we found a new active tunnel URL, update localStorage
+          var curVal = localStorage.getItem("backendBaseUrl");
+          if (curVal !== txtUrl) {
+            localStorage.setItem("backendBaseUrl", txtUrl);
+            console.log("[Handshake] Automatic sync! Active remote GPU backend URL updated from remote_access_url.txt to: " + txtUrl);
+            
+            // Sync settings UI input if it exists
+            var settingsUrlEl = document.getElementById('settings-backend-url');
+            if (settingsUrlEl) settingsUrlEl.value = txtUrl;
+          }
+        }
+      }
+    } catch (e) {
+      console.log("[Handshake] Skip auto remote_access_url.txt fetch (not found or CORS restrictions)");
+    }
+  }
+
   var baseUrl = getBaseUrl();
   try {
     var controller = new AbortController();
@@ -4012,11 +4064,47 @@ async function testBackendConnection() {
       statusPill.className = "connection-status-pill connected";
       setTimeout(syncActiveTrainingStatus, 200);
     } else {
-      statusPill.textContent = "Error (" + response.status + ")";
-      statusPill.className = "connection-status-pill disconnected";
+      throw new Error("HTTP error " + response.status);
     }
   } catch (e) {
-    console.warn("Backend connection test failed:", e);
+    console.warn("Backend connection test failed for " + baseUrl + ":", e);
+    
+    // 2. Fallback: If baseUrl was a remote address and it failed, but we are running locally, attempt to fall back to localhost:8000
+    var isRemote = window.location.protocol !== "file:" && 
+                   window.location.hostname !== "localhost" && 
+                   window.location.hostname !== "127.0.0.1" && 
+                   window.location.hostname !== "";
+                   
+    if (!isRemote && baseUrl !== "http://localhost:8000") {
+      console.log("Attempting fallback connection to local http://localhost:8000...");
+      try {
+        var controllerFallback = new AbortController();
+        var timeoutIdFallback = setTimeout(function() { controllerFallback.abort(); }, 5000);
+        
+        var responseFallback = await fetch("http://localhost:8000/health", {
+          method: "GET",
+          signal: controllerFallback.signal,
+          headers: { "Accept": "application/json" }
+        });
+        clearTimeout(timeoutIdFallback);
+        
+        if (responseFallback.ok) {
+          console.log("Successfully connected to local backend fallback http://localhost:8000!");
+          localStorage.setItem("backendBaseUrl", "http://localhost:8000");
+          var settingsUrlEl = document.getElementById('settings-backend-url');
+          if (settingsUrlEl) settingsUrlEl.value = "http://localhost:8000";
+          
+          statusPill.textContent = "Connected (Local)";
+          statusPill.className = "connection-status-pill connected";
+          setTimeout(syncActiveTrainingStatus, 200);
+          updateTopBarTelemetryStatus();
+          return;
+        }
+      } catch (e2) {
+        console.warn("Local backend fallback failed:", e2);
+      }
+    }
+    
     statusPill.textContent = "Disconnected";
     statusPill.className = "connection-status-pill disconnected";
   }
