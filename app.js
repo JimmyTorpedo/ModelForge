@@ -4044,6 +4044,54 @@ async function testBackendConnection() {
     } catch (e) {
       console.log("[Handshake] Skip auto remote_access_url.txt fetch (not found or CORS restrictions)");
     }
+
+    // 2. Try to fetch the active tunnel URL from the local backend on port 8000 (resolvable on laptop even from remote domain)
+    try {
+      var localRes = await fetch("http://localhost:8000/api/tunnel-url", {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (localRes.ok) {
+        var localData = await localRes.json();
+        if (localData && localData.tunnel_url) {
+          var txtUrl = localData.tunnel_url.trim();
+          if (txtUrl && txtUrl.startsWith("http")) {
+            var curVal = localStorage.getItem("backendBaseUrl");
+            if (curVal !== txtUrl) {
+              localStorage.setItem("backendBaseUrl", txtUrl);
+              console.log("[Handshake] Successfully fetched active tunnel URL from local backend via localhost:", txtUrl);
+              var settingsUrlEl = document.getElementById('settings-backend-url');
+              if (settingsUrlEl) settingsUrlEl.value = txtUrl;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Try 127.0.0.1 if localhost fails
+      try {
+        var localRes = await fetch("http://127.0.0.1:8000/api/tunnel-url", {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+        if (localRes.ok) {
+          var localData = await localRes.json();
+          if (localData && localData.tunnel_url) {
+            var txtUrl = localData.tunnel_url.trim();
+            if (txtUrl && txtUrl.startsWith("http")) {
+              var curVal = localStorage.getItem("backendBaseUrl");
+              if (curVal !== txtUrl) {
+                localStorage.setItem("backendBaseUrl", txtUrl);
+                console.log("[Handshake] Successfully fetched active tunnel URL from local backend via 127.0.0.1:", txtUrl);
+                var settingsUrlEl = document.getElementById('settings-backend-url');
+                if (settingsUrlEl) settingsUrlEl.value = txtUrl;
+              }
+            }
+          }
+        }
+      } catch (e2) {
+        console.log("[Handshake] Localhost/127.0.0.1 backend not reachable directly. Skipping local auto-discovery.");
+      }
+    }
   }
 
   var baseUrl = getBaseUrl();
